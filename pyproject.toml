@@ -1,0 +1,20 @@
+[project]
+name = "attacklab"
+version = "0.1.0"
+description = "Framework para evaluar y practicar TTP de MITRE ATLAS"
+readme = "README.md"
+authors = [
+    { name = "Joaquín Molina (Kinomakino)" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "pyyaml>=6.0.3",
+    "typer>=0.27.3",
+]
+
+[project.scripts]
+attacklab = "attacklab:main"
+
+[build-system]
+requires = ["uv_build>=0.11.24,<0.12.0"]
+build-backend = "uv_build"
