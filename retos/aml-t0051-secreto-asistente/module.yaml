@@ -1,0 +1,13 @@
+# Manifiesto del módulo: lo que la herramienta necesita para listarlo e instalarlo.
+id: aml-t0051-secreto-asistente
+version: 0.1.0
+title: Saca el secreto del asistente
+atlas: [AML.T0051.000, AML.T0056]
+level: básico
+tier: free
+engine: chat/1          # tipo de reto que sabe ejecutar el motor
+model: llama3.2:3b      # la herramienta lo descarga si no está
+content: reto.yaml
+# Reservado para los retos de pago (vacío en los gratuitos):
+encryption: none
+watermark: none

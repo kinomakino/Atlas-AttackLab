@@ -1,20 +1,20 @@
 import typer
 
-from attacklab.scenario import load_all
+from attacklab.modules import load_all
 
-app = typer.Typer(help="Atlas-AttackLab: practica y evalúa TTP de MITRE ATLAS.")
+app = typer.Typer(help="Atlas-AttackLab: practica las técnicas de MITRE ATLAS en tu equipo.")
 
 
 @app.command("list")
-def list_scenarios() -> None:
-    """Lista los escenarios y las técnicas ATLAS que cubren."""
-    for s in load_all():
-        typer.echo(f"{s.id:40} {', '.join(s.atlas):28} {s.level:8} {s.title}")
+def list_retos() -> None:
+    """Lista los retos instalados."""
+    for m in load_all().values():
+        typer.echo(f"{m.id:36} {', '.join(m.atlas):28} {m.level:10} {m.title}")
 
 
 @app.command()
-def serve(host: str = "127.0.0.1", port: int = 8000, reload: bool = False) -> None:
-    """Arranca el portal web."""
+def serve(host: str = "127.0.0.1", port: int = 8080, reload: bool = False) -> None:
+    """Arranca la web del lab."""
     import uvicorn
 
     uvicorn.run("attacklab.web.app:app", host=host, port=port, reload=reload)

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reto · Atlas-AttackLab</title>
+<link rel="icon" href="/assets/brand/favicon.png" type="image/png">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<header class="site-header">
+<nav class="wrap wide" aria-label="Principal">
+<a class="brand" href="/"><img src="/assets/brand/marca-96.png" width="34" height="34" alt="">
+<span>Atlas-AttackLab<small>Lab local</small></span></a>
+<div class="nav-links"><a href="/">← Matriz</a></div>
+</nav>
+</header>
+
+<main class="wrap wide">
+<div class="note warn" id="model" hidden style="margin-top: 20px"></div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch; padding: 20px 0 40px">
+
+<aside class="card" style="flex: 1 1 300px; max-width: 360px; min-width: 0; padding: 22px; display: flex; flex-direction: column; gap: 16px">
+<div class="chips" id="chips"></div>
+<h1 id="title" style="font-size: 26px; line-height: 1.15; margin: 0"></h1>
+<p class="muted" id="story" style="margin: 0"></p>
+<div style="background: var(--surface-2); border-radius: 10px; padding: 14px">
+<div class="eyebrow" style="font-size: 11px">Objetivo</div>
+<div id="goal" style="margin-top: 4px"></div>
+</div>
+<details>
+<summary style="cursor: pointer; font-weight: 600">La técnica en ATLAS</summary>
+<p class="muted" id="technique" style="margin: 10px 0 0; font-size: 14px"></p>
+</details>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<strong>Pistas</strong>
+<div id="hints" style="display: flex; flex-direction: column; gap: 10px"></div>
+</div>
+</aside>
+
+<section class="card" style="flex: 999 1 460px; min-width: 0; padding: 0; display: flex; flex-direction: column; min-height: 620px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--line)">
+<strong>Consola de ataque</strong>
+<div role="group" aria-label="Versión del objetivo" style="margin-left: auto; display: flex; gap: 6px">
+<button type="button" class="btn btn-small" data-mode="vulnerable">Vulnerable</button>
+<button type="button" class="btn btn-small" data-mode="protegido">Protegido</button>
+</div>
+<button type="button" class="btn btn-ghost btn-small" id="restart">Empezar de nuevo</button>
+</div>
+<div id="chat" aria-live="polite" style="flex: 1; padding: 22px 18px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto"></div>
+<form id="form" style="display: flex; gap: 10px; padding: 14px 18px; border-top: 1px solid var(--line)">
+<label for="msg" class="visually-hidden">Tu mensaje</label>
+<input id="msg" autocomplete="off" maxlength="4000" placeholder="Escribe tu mensaje…" style="flex: 1; min-width: 0; min-height: 48px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--bg); color: var(--text); font: inherit">
+<button class="btn btn-attack" type="submit" id="send">Enviar</button>
+</form>
+</section>
+
+<aside class="card" style="flex: 1 1 320px; max-width: 400px; min-width: 0; background: var(--deep); padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<strong>Qué pasa por dentro</strong>
+<div id="trace" style="display: flex; flex-direction: column; gap: 10px"><p class="muted" style="margin: 0; font-size: 14px">Envía un mensaje y aquí verás cada paso: qué recibe el modelo, qué defensas actúan y qué decide el juez.</p></div>
+</aside>
+</div>
+
+<section id="solved" hidden style="padding-top: 0">
+<div class="card" style="border-color: var(--attack-line); display: flex; flex-direction: column; gap: 18px">
+<div class="eyebrow" id="solved-mode"></div>
+<h2 style="font-size: 32px; margin: 0">Reto resuelto</h2>
+<div>
+<strong>Lo que el modelo tenía dentro</strong>
+<pre class="code" id="reveal" style="margin-top: 10px"></pre>
+</div>
+<div class="grid">
+<div><strong>Por qué era vulnerable</strong><p class="muted" id="why" style="margin: 6px 0 0"></p></div>
+<div><strong>Cómo se corrige</strong><p class="muted" id="fix" style="margin: 6px 0 0"></p></div>
+</div>
+<div><strong>Mitigaciones de ATLAS</strong><div class="chips" id="mitigations" style="margin-top: 10px"></div></div>
+<div class="actions" id="next"></div>
+</div>
+</section>
+</main>
+<script type="module" src="/static/reto.js"></script>
+</body>
+</html>

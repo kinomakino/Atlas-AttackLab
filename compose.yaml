@@ -1,0 +1,39 @@
+# Atlas-AttackLab: arranca con `docker compose up` y abre http://127.0.0.1:8080
+name: atlas-attacklab
+
+services:
+  lab:
+    build: .
+    image: atlas-attacklab:dev
+    ports:
+      - "127.0.0.1:8080:8080"     # solo tu equipo; nunca la red
+    environment:
+      OLLAMA_URL: http://ollama:11434
+    volumes:
+      - progreso:/data            # tu progreso, nada de tus carpetas
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [front, labnet]
+    depends_on: [ollama]
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:0.35.1
+    volumes:
+      - modelos:/root/.ollama     # los modelos se guardan aquí y no se vuelven a bajar
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [labnet, salida]   # sin puertos publicados
+    restart: unless-stopped
+
+networks:
+  front: {}                       # para publicar el puerto en 127.0.0.1
+  labnet:
+    internal: true                # lab <-> modelo, sin internet
+  salida: {}                      # solo Ollama, para descargar modelos
+
+volumes:
+  progreso: {}
+  modelos: {}

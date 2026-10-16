@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atlas-AttackLab · Lab local</title>
+<link rel="icon" href="/assets/brand/favicon.png" type="image/png">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<header class="site-header">
+<nav class="wrap wide" aria-label="Principal">
+<a class="brand" href="/"><img src="/assets/brand/marca-96.png" width="34" height="34" alt="">
+<span>Atlas-AttackLab<small>Lab local</small></span></a>
+<div class="nav-links">
+<a href="https://witty-rock-0c004b703.6.azurestaticapps.net">Web del proyecto</a>
+<a href="https://www.seguridadsi.com/membresia">Academia</a>
+</div>
+</nav>
+</header>
+
+<main>
+<section style="padding-bottom: 16px">
+<div class="wrap wide">
+<h1 style="font-size: 40px; margin: 0">Tu lab</h1>
+<p class="muted" style="margin: 6px 0 0" id="summary">Cargando…</p>
+<div class="note warn" id="model" hidden style="margin-top: 20px"></div>
+</div>
+</section>
+
+<section style="padding-top: 0">
+<div class="wrap wide">
+<div class="legend">
+<span><i class="sw" style="background: var(--attack)"></i>Reto instalado</span>
+<span><i class="sw" style="background: #121820"></i>Sin reto instalado</span>
+<span>✓ resuelto en vulnerable · ✓✓ también en protegido</span>
+</div>
+<div class="matrix-box"><div class="matrix" id="matrix"></div></div>
+</div>
+</section>
+</main>
+<script type="module" src="/static/home.js"></script>
+</body>
+</html>

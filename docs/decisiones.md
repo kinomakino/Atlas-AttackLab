@@ -58,7 +58,7 @@ Descartado por ahora: plataforma online en Azure, login, ranking global y verifi
 ## 7. Orden de trabajo
 
 1. ✅ Diseño de pantallas (lienzo privado: https://claude.ai/artifact/SWFEnTmrcW3kPgGBSbv2b3). Hay que adaptarlo al modo local: sobran login y ranking, y el perfil pasa a ser "tu progreso".
-2. **Primer reto completo, ya como módulo** (AML.T0051.000, "Saca el secreto del asistente"): motor, pantalla del lab y de reto resuelto con el diseño aprobado, **matriz ATLAS clicable** leyendo el catálogo, y `docker compose up` probado.
+2. ✅ (2026-10-16, local) **Primer reto completo, ya como módulo** (AML.T0051.000, "Saca el secreto del asistente"): motor, pantalla del lab y de reto resuelto con el diseño aprobado, **matriz ATLAS clicable** leyendo el catálogo, y `docker compose up` probado.
 3. Más retos gratis.
 4. Servidor de licencias y primeros retos de pago.
 5. Labs de agentes, MCP y RAG.

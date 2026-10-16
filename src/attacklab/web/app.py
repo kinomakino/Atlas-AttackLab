@@ -1,28 +1,42 @@
+"""Web y API del lab local. Sin cuentas ni login: todo corre en el equipo del alumno."""
+
 from pathlib import Path
 from typing import Literal
 
-import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from attacklab import engine, scenario
+from attacklab import engine, llm, modules, progress
 from attacklab.atlas import load_catalog
 
 STATIC = Path(__file__).parent / "static"
-app = FastAPI(title="Atlas-AttackLab")
+SITE = modules.REPO / "site"
+
+app = FastAPI(title="Atlas-AttackLab", docs_url=None, redoc_url=None)
+app.mount("/assets", StaticFiles(directory=SITE / "assets"), name="assets")
+app.mount("/data", StaticFiles(directory=SITE / "data"), name="data")
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
-
-class Message(BaseModel):
-    role: Literal["user", "assistant"]
-    content: str
+ATLAS = load_catalog()
 
 
-class Attempt(BaseModel):
-    mode: Literal["vulnerable", "protegido"] = "vulnerable"
-    messages: list[Message]
+@app.middleware("http")
+async def security_headers(request, call_next):
+    resp = await call_next(request)
+    resp.headers["Content-Security-Policy"] = (
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'")
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    return resp
+
+
+def _module(reto_id: str) -> modules.Module:
+    m = modules.load_all().get(reto_id)
+    if not m:
+        raise HTTPException(404, "Ese reto no está instalado")
+    return m
 
 
 @app.get("/")
@@ -30,61 +44,85 @@ def index():
     return FileResponse(STATIC / "index.html")
 
 
-@app.get("/lab/{lab_id}")
-def lab_page(lab_id: str):
-    return FileResponse(STATIC / "lab.html")
+@app.get("/retos/{reto_id}")
+def reto_page(reto_id: str):
+    return FileResponse(STATIC / "reto.html")
 
 
-@app.get("/api/catalog")
-def catalog():
-    c = load_catalog()
-    covered: dict[str, list[str]] = {}
-    for s in scenario.load_all():
-        for tid in s.atlas:
-            covered.setdefault(tid, []).append(s.id)
-    techniques = [
-        {"id": t["id"], "name": t["name"], "tactics": t["tactics"], "parent": t["parent"],
-         "labs": covered.get(t["id"], [])}
-        for t in c["techniques"].values()
-    ]
-    return {"version": c["version"], "source": c["source"],
-            "tactics": [{"id": t["id"], "name": t["name"]} for t in c["tactics"]],
-            "techniques": techniques}
+@app.get("/api/status")
+def status():
+    if not llm.reachable():
+        return {"ollama": False, "models": {}}
+    have = llm.installed_models()
+    needed = {m.model for m in modules.load_all().values()}
+    return {"ollama": True, "models": {
+        name: {"ready": name in have or f"{name}:latest" in have, "pull": llm.pulls.get(name)} for name in needed}}
 
 
-@app.get("/api/labs/{lab_id}")
-def lab(lab_id: str):
-    s = scenario.get(lab_id)
-    if not s:
-        raise HTTPException(404, "No existe ese laboratorio")
-    c = load_catalog()
-    tactic_names = {t["id"]: t["name"] for t in c["tactics"]}
+class Pull(BaseModel):
+    model: str = Field(max_length=100)
+
+
+@app.post("/api/models/pull")
+def pull(body: Pull):
+    if body.model not in {m.model for m in modules.load_all().values()}:
+        raise HTTPException(400, "Ese modelo no lo necesita ningún reto instalado")
+    return llm.start_pull(body.model)
+
+
+@app.get("/api/retos")
+def retos():
+    done = progress.load()
+    return {"retos": [{**m.summary(), "progress": done.get(m.id, {})} for m in modules.load_all().values()]}
+
+
+@app.get("/api/retos/{reto_id}")
+def reto(reto_id: str):
+    m = _module(reto_id)
+    c = m.content
+    tactics = {t["id"]: t["name"] for t in ATLAS["tactics"]}
     techniques = []
-    for tid in s.atlas:
-        t = c["techniques"][tid]
-        techniques.append({
-            **t,
-            "tactics": [tactic_names[x] for x in t["tactics"]],
-            "parent_name": c["techniques"][t["parent"]]["name"] if t["parent"] else None,
-            "mitigations": [c["mitigations"][m] for m in t["mitigations"]],
-        })
-    return {**s.public(), "techniques": techniques, "model": s.target.model}
+    for tid in m.atlas:
+        t = ATLAS["techniques"].get(tid)
+        if t:
+            parent = ATLAS["techniques"].get(t["parent"]) if t["parent"] else None
+            techniques.append({"id": tid, "name": f"{parent['name']}: {t['name']}" if parent else t["name"],
+                               "tactics": [tactics[x] for x in t["tactics"]]})
+    mitigations = [{"id": mid, "name": ATLAS["mitigations"][mid]["name"]}
+                   for mid in c.get("mitigations", []) if mid in ATLAS["mitigations"]]
+    return {**m.summary(), "story": c["story"], "goal": c["goal"], "technique": c["technique"],
+            "hints": c.get("hints", []), "techniques": techniques, "mitigations": mitigations,
+            "why_vulnerable": c["why_vulnerable"], "how_to_fix": c["how_to_fix"],
+            "progress": progress.load().get(m.id, {})}
 
 
-@app.post("/api/labs/{lab_id}/attempt")
-def attempt(lab_id: str, body: Attempt):
-    s = scenario.get(lab_id)
-    if not s:
-        raise HTTPException(404, "No existe ese laboratorio")
-    if not body.messages or body.messages[-1].role != "user":
+class Message(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(max_length=4000)
+
+
+class Attempt(BaseModel):
+    mode: Literal["vulnerable", "protegido"] = "vulnerable"
+    messages: list[Message] = Field(min_length=1, max_length=40)
+    hints_used: int = Field(0, ge=0, le=10)
+
+
+@app.post("/api/retos/{reto_id}/attempt")
+def attempt(reto_id: str, body: Attempt):
+    m = _module(reto_id)
+    if body.messages[-1].role != "user":
         raise HTTPException(400, "El último mensaje tiene que ser tuyo")
-    return engine.attempt(s, body.mode, [m.model_dump() for m in body.messages])
+    result = engine.attempt(m, body.mode, [x.model_dump() for x in body.messages])
+    if result["solved"]:
+        result["progress"] = progress.record(m.id, body.mode, body.hints_used)
+    return result
 
 
-@app.get("/api/health")
-def health():
-    try:
-        tags = httpx.get(f"{engine.OLLAMA_URL}/api/tags", timeout=3).json()
-        return {"ollama": True, "url": engine.OLLAMA_URL, "models": [m["name"] for m in tags.get("models", [])]}
-    except httpx.HTTPError:
-        return {"ollama": False, "url": engine.OLLAMA_URL, "models": []}
+class Reset(BaseModel):
+    mode: Literal["vulnerable", "protegido"]
+
+
+@app.post("/api/retos/{reto_id}/reset")
+def reset(reto_id: str, body: Reset):
+    engine.reset(_module(reto_id), body.mode)
+    return {"ok": True}

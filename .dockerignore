@@ -1,0 +1,9 @@
+.git
+.venv
+**/__pycache__
+api
+site/*.html
+site/admin
+docs
+.claude
+**/node_modules
