@@ -1,11 +1,8 @@
 # Atlas-AttackLab
 
-Plataforma para aprender y practicar las técnicas de [MITRE ATLAS](https://atlas.mitre.org) atacando sistemas de IA vulnerables.
+Lab local para aprender y practicar las técnicas de [MITRE ATLAS](https://atlas.mitre.org) atacando sistemas de IA vulnerables. Todo corre en tu equipo con Docker, con el modelo incluido.
 
-- **Plataforma online** (Azure): retos que puntúan, ranking y perfil.
-- **Lab local** (Docker): todos los labs para practicar a fondo en tu equipo. No puntúa.
-
-Estado: fase de diseño. Las decisiones están en [docs/decisiones.md](docs/decisiones.md).
+Estado: en construcción. Decisiones en [docs/decisiones.md](docs/decisiones.md) y arquitectura en [docs/arquitectura.md](docs/arquitectura.md).
 
 ## Lo que ya funciona
 
