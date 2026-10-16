@@ -9,14 +9,22 @@ app = typer.Typer(help="Atlas-AttackLab: practica y evalúa TTP de MITRE ATLAS."
 def list_scenarios() -> None:
     """Lista los escenarios y las técnicas ATLAS que cubren."""
     for s in load_all():
-        typer.echo(f"{s.id:40} {', '.join(s.atlas):22} {s.level:8} {s.title}")
+        typer.echo(f"{s.id:40} {', '.join(s.atlas):28} {s.level:8} {s.title}")
 
 
 @app.command()
-def show(scenario_id: str) -> None:
-    """Muestra el objetivo de un escenario."""
-    match = [s for s in load_all() if s.id == scenario_id]
-    if not match:
-        raise typer.BadParameter(f"No existe el escenario {scenario_id}")
-    s = match[0]
-    typer.echo(f"{s.title}\nATLAS: {', '.join(s.atlas)} · Táctica: {s.tactic} · Nivel: {s.level}\n\n{s.goal}")
+def serve(host: str = "127.0.0.1", port: int = 8000, reload: bool = False) -> None:
+    """Arranca el portal web."""
+    import uvicorn
+
+    uvicorn.run("attacklab.web.app:app", host=host, port=port, reload=reload)
+
+
+@app.command("import-atlas")
+def import_atlas(version: str = "2026.09") -> None:
+    """Descarga el catálogo oficial de ATLAS a data/atlas.json."""
+    from attacklab.atlas import import_release
+
+    c = import_release(version)
+    typer.echo(f"ATLAS {c['version']}: {len(c['tactics'])} tácticas, "
+               f"{len(c['techniques'])} técnicas, {len(c['mitigations'])} mitigaciones")

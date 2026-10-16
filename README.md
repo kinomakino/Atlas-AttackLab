@@ -1,17 +1,17 @@
 # Atlas-AttackLab
 
-Framework para evaluar y practicar las TTP de [MITRE ATLAS](https://atlas.mitre.org) contra sistemas de IA.
+Plataforma para aprender y practicar las técnicas de [MITRE ATLAS](https://atlas.mitre.org) atacando sistemas de IA vulnerables.
 
-- **Escenarios** (`scenarios/`): cada uno es un objetivo vulnerable en Docker (LLM, RAG, agente con MCP, modelo ML) mapeado a técnicas ATLAS.
-- **Evaluador** (`src/attacklab/`): lanza las TTP contra un escenario o un sistema real y puntúa si el ataque tuvo éxito.
+- **Plataforma online** (Azure): retos que puntúan, ranking y perfil.
+- **Lab local** (Docker): todos los labs para practicar a fondo en tu equipo. No puntúa.
 
-## Uso
+Estado: fase de diseño. Las decisiones están en [docs/decisiones.md](docs/decisiones.md).
+
+## Lo que ya funciona
 
 ```bash
-uv run attacklab list
-uv run attacklab show aml-t0051-prompt-injection-directa
+uv run attacklab import-atlas   # catálogo oficial de ATLAS en data/atlas.json
+uv run attacklab list           # labs definidos
 ```
 
-## Formato de un escenario
-
-`scenarios/<id>/scenario.yaml` con `id`, `title`, `atlas` (IDs de técnica), `tactic`, `level`, `goal` y `hints`. El objetivo vulnerable va en la misma carpeta con su `Dockerfile`.
+Catálogo de ATLAS © MITRE, licencia Apache 2.0.
