@@ -6,6 +6,25 @@
 
 Un **lab local** para aprender y practicar las técnicas de [MITRE ATLAS](https://atlas.mitre.org) atacando sistemas de IA vulnerables. Cada alumno lo instala en su equipo y lo usa sin coste para nosotros: el modelo, los agentes y los servicios falsos corren en su máquina.
 
+## 0. Ninguna técnica es reto sin reproducir antes el ataque
+
+Antes de construir un reto sobre una técnica de ATLAS hay que demostrar que somos capaces de reproducir la vulnerabilidad y su explotación. Si no, la técnica no se despliega.
+
+Para cada técnica candidata:
+
+1. **Prueba de concepto:** el objetivo vulnerable mínimo, en un entorno desechable (nunca en el equipo de nadie).
+2. **Solucionario:** ataques de referencia, uno por familia de técnica, más un ataque ingenuo que no debería funcionar.
+3. **Medición:** cada ataque se lanza varias veces contra el modelo real, en modo vulnerable y protegido, y se cuenta cuántas veces funciona.
+4. **Criterio para aprobarla:**
+   - **Reproducible:** al menos un ataque funciona de forma estable en cada modo.
+   - **No trivial:** el ataque ingenuo no funciona.
+   - **Estable:** el resultado no depende de la suerte.
+5. Solo entonces se escribe el reto: escenario, teoría, pistas basadas en los ataques que funcionan y explicación.
+
+Si cambian el modelo o las instrucciones del objetivo, se vuelve a medir.
+
+**Estado del primer reto (AML.T0051.000):** solucionario escrito (`retos/aml-t0051-secreto-asistente/solucionario.yaml`), medición pendiente. Hasta que se mida, el reto no se da por bueno.
+
 ## 1. Todo local
 
 - El alumno pone el equipo. Nosotros no pagamos infraestructura ni modelos.
