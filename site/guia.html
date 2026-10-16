@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cómo se juega · Atlas-AttackLab</title>
+<meta name="description" content="El recorrido del alumno en Atlas-AttackLab: instalar, elegir un reto, atacarlo, ver qué pasa por dentro y romper la versión protegida.">
+<link rel="icon" href="/assets/brand/favicon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<header class="site-header">
+<nav class="wrap" aria-label="Principal">
+<a class="brand" href="/"><img src="/assets/brand/marca-96.png" width="34" height="34" alt="">
+<span>Atlas-AttackLab<small>by seguridad/si</small></span></a>
+<div class="nav-links">
+<a href="/#aprender">Qué aprendes</a>
+<a href="/guia.html" aria-current="page">Cómo se juega</a>
+<a href="/matriz.html">Matriz</a>
+<a href="https://www.seguridadsi.com/membresia">Academia</a>
+<a class="btn btn-attack btn-small" href="/descargar.html">Descargar</a>
+</div>
+</nav>
+</header>
+
+<main>
+<section style="padding-bottom: 24px">
+<div class="wrap">
+<div class="eyebrow">Guía del alumno</div>
+<h1 style="font-size: clamp(36px, 5vw, 52px); margin: 8px 0">Cómo se juega</h1>
+<p class="muted" style="margin: 0; max-width: 680px">De cero a tu primer reto resuelto, y después a romper la versión protegida. Todo pasa en tu equipo: la web pública solo sirve para descargar el lab y ver el catálogo.</p>
+</div>
+</section>
+
+<section style="padding-top: 0">
+<div class="wrap" style="display: flex; flex-direction: column; gap: 20px">
+
+<div class="card">
+<div class="step-n">01</div>
+<h3>Instala el lab</h3>
+<p>Necesitas Docker (Docker Desktop en macOS y Windows) arrancado. Descarga el instalador desde <a href="/descargar.html">Descargar</a>, léelo y ejecútalo. Revisa tu equipo, te dice qué falta si algo no cuadra y deja instalado el comando <span class="mono">atlas-lab</span>.</p>
+</div>
+
+<div class="card">
+<div class="step-n">02</div>
+<h3>Abre el lab</h3>
+<p>Al terminar, el instalador abre <span class="mono">http://127.0.0.1:8080</span> en tu navegador (si el 8080 está ocupado, usa el siguiente libre y te lo dice). Otro día, arráncalo con <span class="mono">atlas-lab start</span> y ábrelo con <span class="mono">atlas-lab open</span>. Solo responde en tu equipo: nadie de tu red lo ve.</p>
+</div>
+
+<div class="card">
+<div class="step-n">03</div>
+<h3>Descarga el modelo la primera vez</h3>
+<p>El lab no trae el modelo dentro de la imagen. La primera vez verás un aviso arriba con el botón <strong>Descargar llama3.2:3b</strong> (unos 2 GB). Púlsalo y espera a que termine; se guarda en tu equipo y no vuelve a pedírtelo. Si el aviso dice que el modelo está arrancando, espera unos segundos.</p>
+</div>
+
+<div class="card">
+<div class="step-n">04</div>
+<h3>Elige un reto en la matriz</h3>
+<p>La portada del lab es la matriz MITRE ATLAS: cada columna es una táctica y cada casilla, una técnica. Las casillas en color tienen reto instalado; pincha una para entrar. Arriba ves cuántos retos tienes y cuántos has resuelto. En la <a href="/matriz.html">matriz de esta web</a> tienes el catálogo completo, y el botón <strong>Abrir en mi lab</strong> te lleva al reto en tu equipo.</p>
+</div>
+
+<div class="card">
+<div class="step-n">05</div>
+<h3>Lee el reto y, si te atascas, las pistas</h3>
+<p>A la izquierda está la historia, el <strong>objetivo</strong> (qué tienes que conseguir) y <strong>La técnica en ATLAS</strong>, la teoría de lo que vas a hacer. Debajo, las <strong>pistas</strong>: se abren una a una con <strong>Ver pista</strong>. Úsalas sin miedo; al resolver el reto solo se anota cuántas has usado.</p>
+</div>
+
+<div class="card">
+<div class="step-n">06</div>
+<h3>Ataca y mira «Qué pasa por dentro»</h3>
+<p>En el centro está la <strong>consola de ataque</strong>: escribe al sistema como lo haría un atacante. A la derecha, <strong>Qué pasa por dentro</strong> enseña cada paso de cada mensaje: qué recibe el modelo, qué defensas actúan y qué decide el juez. Despliega <strong>Ver lo que recibe el modelo</strong> para ver el texto exacto. Ahí entiendes por qué un intento funciona o no.</p>
+</div>
+
+<div class="card">
+<div class="step-n">07</div>
+<h3>Resuélvelo</h3>
+<p>Cuando consigues el objetivo, el juez da el reto por resuelto y aparece el cierre: lo que el modelo tenía dentro, <strong>por qué era vulnerable</strong>, <strong>cómo se corrige</strong> y las mitigaciones oficiales de ATLAS. <strong>Empezar de nuevo</strong> abre otra partida con un secreto distinto.</p>
+</div>
+
+<div class="card">
+<div class="step-n">08</div>
+<h3>Pasa al modo protegido</h3>
+<p>Con el reto resuelto, pulsa <strong>Probar la versión protegida</strong> (o el botón <strong>Protegido</strong> de la consola). Es el mismo sistema con defensas puestas. Vuelve a atacar y mira en «Qué pasa por dentro» qué defensa te para y cómo saltarla. Ahí es donde se aprende de verdad.</p>
+</div>
+
+<div class="card">
+<div class="step-n">09</div>
+<h3>Mira tu progreso</h3>
+<p>En la matriz del lab, cada reto lleva <span class="mono">✓</span> si lo has resuelto en modo vulnerable y <span class="mono">✓✓</span> si también lo has roto protegido. Los botones de la consola muestran lo mismo. El progreso se guarda solo en tu equipo: no hay cuentas ni ranking, y se conserva al actualizar el lab.</p>
+</div>
+
+</div>
+</section>
+
+<section style="padding-top: 0">
+<div class="wrap">
+<h2 class="section-title">Comando atlas-lab</h2>
+<pre class="code">atlas-lab start       <span style="color: var(--faint)"># arranca el lab</span>
+atlas-lab open        <span style="color: var(--faint)"># lo abre en el navegador</span>
+atlas-lab stop        <span style="color: var(--faint)"># lo para (no borra nada)</span>
+atlas-lab status      <span style="color: var(--faint)"># qué está corriendo</span>
+atlas-lab doctor      <span style="color: var(--faint)"># repite las comprobaciones del instalador</span>
+atlas-lab update      <span style="color: var(--faint)"># instala la última versión, conserva el progreso</span>
+atlas-lab logs        <span style="color: var(--faint)"># registros, para pedir ayuda</span>
+atlas-lab uninstall   <span style="color: var(--faint)"># lo quita todo</span></pre>
+<div class="actions" style="margin-top: 28px">
+<a class="btn btn-attack" href="/descargar.html">Descargar el lab</a>
+<a class="btn btn-ghost" href="/matriz.html">Ver la matriz</a>
+</div>
+</div>
+</section>
+</main>
+
+<footer class="site-footer">
+<div class="wrap">
+<a href="https://www.seguridadsi.com" class="footer-brand"><img src="/assets/brand/seguridadsi.png" width="200" height="39" alt="seguridad/si ciberseguridad"></a>
+<nav class="footer-links" aria-label="seguridad/si">
+<a href="https://www.seguridadsi.com/membresia">Membresía</a>
+<a href="https://www.seguridadsi.com/todos-cursos">Cursos</a>
+<a href="https://www.seguridadsi.com/servicios">Servicios</a>
+<a href="https://www.seguridadsi.com/contacto">Contacto</a>
+</nav>
+<span class="footer-note">Basado en MITRE ATLAS 2026.09 (Apache 2.0). No afiliado a MITRE.</span>
+</div>
+</footer>
+<script type="module" src="/assets/nav.js"></script>
+</body>
+</html>

@@ -12,7 +12,7 @@ Web pública del proyecto y catálogo de retos, en Azure Static Web Apps.
 
 | Ruta | Acceso | Qué es |
 |---|---|---|
-| `/`, `/matriz.html`, `/descargar.html` | Público | Portada, matriz ATLAS con los retos y descarga |
+| `/`, `/guia.html`, `/matriz.html`, `/descargar.html` | Público | Portada, guía del alumno, matriz ATLAS con los retos y descarga |
 | `/api/catalog` | Público | Retos publicados. Lo lee la matriz y lo leerá la herramienta local |
 | `/admin/` | Rol `admin` | Gestión del catálogo |
 | `/api/admin/retos` | Rol `admin` | API de gestión (la función vuelve a comprobar el rol) |
