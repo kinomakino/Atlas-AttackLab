@@ -78,7 +78,7 @@ ok "Sistema: $OS_NAME ($(uname -m))"
 # ---------------------------------------------------------------- Docker
 if ! command -v "$DOCKER" >/dev/null 2>&1; then
   if command -v podman >/dev/null 2>&1; then
-    die "Hay Podman pero no Docker." "Esta versión necesita Docker. Guía: $DOCKER_HELP" 11
+    die "Docker no está instalado (hay Podman, pero esta versión necesita Docker)." "Guía de instalación: $DOCKER_HELP" 11
   fi
   die "Docker no está instalado." "Instálalo y vuelve a ejecutar este instalador: $DOCKER_HELP" 11
 fi

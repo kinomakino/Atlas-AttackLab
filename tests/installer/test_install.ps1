@@ -25,8 +25,11 @@ function Run($name, [int]$wantCode, $wantText, [hashtable]$vars = @{}, [string[]
   $vars['ATTACKLAB_DOCKER'] = $(if ($vars.ContainsKey('ATTACKLAB_DOCKER')) { $vars['ATTACKLAB_DOCKER'] } else { $fake })
   $vars['ATTACKLAB_DIR'] = Join-Path $work 'lab'
   foreach ($k in $vars.Keys) { $saved[$k] = [Environment]::GetEnvironmentVariable($k); [Environment]::SetEnvironmentVariable($k, [string]$vars[$k]) }
+  # stderr del instalador no debe convertirse en excepción aquí (PowerShell 5.1)
+  $ErrorActionPreference = 'Continue'
   $out = & powershell -NoProfile -ExecutionPolicy Bypass -File $installer -Check @extra 2>&1 | Out-String
   $code = $LASTEXITCODE
+  $ErrorActionPreference = 'Stop'
   foreach ($k in $saved.Keys) { [Environment]::SetEnvironmentVariable($k, $saved[$k]) }
   if ($code -eq $wantCode -and $out.Contains($wantText)) { $script:pass++; "ok    $name" }
   else { $script:fail++; "FALLA $name (codigo $code, esperado $wantCode)`n$out`n" }
