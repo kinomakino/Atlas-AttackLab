@@ -28,19 +28,40 @@ Un **lab local** para aprender y practicar las técnicas de [MITRE ATLAS](https:
 - Los labs de agentes atacan **servicios falsos** dentro de esa red (ERP, correo, ficheros).
 - Opcional: apuntar a un Ollama propio con GPU para ir más rápido.
 
-## 4. Para más adelante (no ahora)
+## 4. Herramienta abierta, retos como módulos
+
+- **La herramienta es gratis y de código abierto** en GitHub: portal, motor, matriz y `compose.yaml`.
+- **Cada reto es un módulo** versionado y firmado: su definición y, si los necesita, sus servicios falsos. Se publica en un registro de contenedores (OCI).
+- **Un catálogo firmado** dice qué retos existen. La matriz lo lee y pinta todas las casillas; al pinchar, se abre el reto o se ofrece instalarlo.
+- Publicar un reto nuevo es subir un módulo. La herramienta no cambia.
+- **Modelo de negocio:** unos 30 retos gratis (1–2 por táctica) y suscripción para el resto y los nuevos de cada mes. Los de pago salen en la matriz con candado.
+
+## 5. Protección de los retos de pago
+
+Objetivo: no impedir la piratería al 100 % (imposible en local), sino que no sea fácil ni gratis, y que quien filtre quede identificado. La protección va en los retos, no en la herramienta, porque la herramienta es abierta.
+
+- **Cifrado:** el módulo de pago viaja cifrado. La clave la da el servidor de licencias al arrancar el reto, por dispositivo y de corta duración, y se descifra en memoria. Sin licencia, no se juega.
+- **Licencia:** comprobación al arrancar, con margen sin conexión (unos 7 días), límite de dispositivos y alertas de uso anómalo. Los retos gratis no necesitan conexión.
+- **Marca de agua por comprador:** cada descarga lleva datos únicos de esa cuenta (empresas ficticias, datos falsos, cadenas en documentos). Un pack filtrado se rastrea hasta su cuenta.
+- **Contenido nuevo cada mes:** lo pirateado envejece.
+- Se cobra con una plataforma de pagos que gestione el IVA europeo (Stripe, Paddle, Lemon Squeezy, o Thinkific si ya se usa).
+
+**Ahora:** el formato de módulo deja sitio para firma, cifrado y marca de agua. El servidor de licencias se monta con el primer reto de pago.
+
+## 6. Para más adelante (no ahora)
 
 - **Modo aula o evento:** el organizador monta el lab en su servidor y los alumnos lo atacan por la red. Ahí sí se podría puntuar de forma segura, con ranking por evento.
 - **Versión online de pago**, alojada por nosotros.
 
 Descartado por ahora: plataforma online en Azure, login, ranking global y verificación de entregas en servidor.
 
-## 5. Orden de trabajo
+## 7. Orden de trabajo
 
 1. ✅ Diseño de pantallas (lienzo privado: https://claude.ai/artifact/SWFEnTmrcW3kPgGBSbv2b3). Hay que adaptarlo al modo local: sobran login y ranking, y el perfil pasa a ser "tu progreso".
-2. Motor de labs + primeros labs + `compose.yaml` funcionando con un comando.
-3. La web del lab sobre ese motor, con el diseño aprobado.
-4. Ampliar labs: agentes, MCP, RAG.
+2. **Primer reto completo, ya como módulo** (AML.T0051.000, "Saca el secreto del asistente"): motor, pantalla del lab y de reto resuelto con el diseño aprobado, **matriz ATLAS clicable** leyendo el catálogo, y `docker compose up` probado.
+3. Más retos gratis.
+4. Servidor de licencias y primeros retos de pago.
+5. Labs de agentes, MCP y RAG.
 
 ## Lo que ya hay
 
