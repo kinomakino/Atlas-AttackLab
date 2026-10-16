@@ -49,6 +49,11 @@ def reto_page(reto_id: str):
     return FileResponse(STATIC / "reto.html")
 
 
+@app.get("/api/health")
+def health():
+    return {"ok": True}
+
+
 @app.get("/api/status")
 def status():
     if not llm.reachable():

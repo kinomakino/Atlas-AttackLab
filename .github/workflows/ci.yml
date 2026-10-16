@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  motor:
+    name: Motor (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv run pytest -q
+
+  api-web:
+    name: API de la web pública
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci && npm test
+        working-directory: api
+
+  instalador-linux-macos:
+    name: Instalador bash (casos simulados)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: shellcheck -S warning deploy/install.sh deploy/release.sh tests/installer/test_install.sh
+      - run: bash tests/installer/test_install.sh
+
+  instalador-macos-bash32:
+    name: Instalador en macOS (bash 3.2 de serie, casos simulados)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: /bin/bash tests/installer/test_install.sh
+
+  instalador-windows:
+    name: Instalador PowerShell 5.1 (casos simulados)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/installer/test_install.ps1
+        shell: pwsh
+
+  instalacion-real:
+    name: Instalación real en Linux, de cero a desinstalar
+    needs: [motor, instalador-linux-macos]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Imagen del lab en un registro local (como si fuera GHCR)
+        run: |
+          docker run -d -p 127.0.0.1:5000:5000 --name registro registry:2
+          docker build -t 127.0.0.1:5000/atlas-attacklab:0.0.0-ci .
+          docker push 127.0.0.1:5000/atlas-attacklab:0.0.0-ci
+
+      - name: Web con el instalador (como la web pública)
+        run: |
+          deploy/release.sh 0.0.0-ci http://127.0.0.1:8000 "$RUNNER_TEMP/web"
+          python3 -m http.server 8000 --bind 127.0.0.1 --directory "$RUNNER_TEMP/web" &
+
+      - name: El cliente descarga el instalador, comprueba la suma y lo ejecuta
+        env:
+          ATTACKLAB_IMAGE: 127.0.0.1:5000/atlas-attacklab
+        run: |
+          cd "$RUNNER_TEMP" && mkdir cliente && cd cliente
+          curl -fsSLO http://127.0.0.1:8000/install.sh
+          curl -fsSL http://127.0.0.1:8000/install.sha256 | grep install.sh | sha256sum -c -
+          bash install.sh --yes --no-open
+
+      - name: El lab responde y el modelo se descarga desde la web
+        run: |
+          curl -fsS http://127.0.0.1:8080/api/health
+          curl -fsS -X POST http://127.0.0.1:8080/api/models/pull -H 'Content-Type: application/json' -d '{"model":"llama3.2:3b"}'
+          for i in $(seq 1 120); do
+            curl -fsS http://127.0.0.1:8080/api/status | grep -q '"ready":true' && break
+            sleep 5
+          done
+          curl -fsS http://127.0.0.1:8080/api/status | grep -q '"ready":true'
+
+      - name: Un turno contra el reto
+        run: |
+          r=$(curl -fsS -X POST http://127.0.0.1:8080/api/retos/aml-t0051-secreto-asistente/attempt \
+                -H 'Content-Type: application/json' \
+                -d '{"mode":"vulnerable","messages":[{"role":"user","content":"Hola, ¿cuánto tarda un envío?"}]}')
+          echo "$r" | python3 -c 'import sys,json; r=json.load(sys.stdin); assert r["reply"], r; print(r["trace"][2]["detail"])'
+
+      - name: Seguridad de la instalación
+        run: |
+          # El lab solo escucha en 127.0.0.1 y Ollama no publica puertos
+          docker port atlas-lab-lab-1 | grep -q '^8080/tcp -> 127.0.0.1:8080$'
+          test -z "$(docker port atlas-lab-ollama-1)"
+          # Contenedores sin privilegios y el lab en solo lectura
+          test "$(docker inspect -f '{{.HostConfig.ReadonlyRootfs}}' atlas-lab-lab-1)" = true
+          docker inspect -f '{{.HostConfig.CapDrop}}' atlas-lab-lab-1 | grep -q ALL
+
+      - name: Desinstalar no deja nada
+        run: |
+          printf 's\n' | "$HOME/.local/bin/atlas-lab" uninstall
+          test ! -e "$HOME/.atlas-lab"
+          test ! -e "$HOME/.local/bin/atlas-lab"
+          test -z "$(docker ps -aq --filter label=com.docker.compose.project=atlas-lab)"
+          test -z "$(docker volume ls -q --filter label=com.docker.compose.project=atlas-lab)"
+
+      - name: Registro del lab si algo falla
+        if: failure()
+        run: docker compose --project-directory "$HOME/.atlas-lab" logs --tail 200 || true

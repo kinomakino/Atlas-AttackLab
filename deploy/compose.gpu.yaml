@@ -1,0 +1,10 @@
+# Se añade cuando el instalador detecta una GPU NVIDIA usable por Docker.
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

@@ -1,0 +1,50 @@
+# Atlas-AttackLab — lo genera y gestiona el instalador. No hace falta tocarlo.
+# Los valores salen de .env (los decide el instalador según el equipo).
+name: atlas-lab
+
+services:
+  lab:
+    image: ${ATTACKLAB_IMAGE:-ghcr.io/kinomakino/atlas-attacklab}:${ATTACKLAB_VERSION:?}
+    ports:
+      - "127.0.0.1:${ATTACKLAB_PORT:-8080}:8080"   # solo este equipo, nunca la red
+    environment:
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+      ATTACKLAB_THREADS: ${ATTACKLAB_THREADS:-}
+    volumes:
+      - progreso:/data
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [front, labnet]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"         # para usar un Ollama nativo del equipo
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+  ollama:
+    profiles: [ollama]                              # se omite si se usa un Ollama nativo
+    image: ollama/ollama:0.35.1
+    environment:
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+    volumes:
+      - modelos:/root/.ollama
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [labnet, salida]                      # sin puertos publicados
+    restart: unless-stopped
+
+networks:
+  front: {}
+  labnet:
+    internal: true                                  # lab <-> modelo, sin internet
+  salida: {}                                        # solo Ollama, para descargar modelos
+
+volumes:
+  progreso: {}
+  modelos: {}
