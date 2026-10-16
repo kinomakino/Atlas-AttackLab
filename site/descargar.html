@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Descargar el lab · Atlas-AttackLab</title>
+<meta name="description" content="Instala Atlas-AttackLab en tu equipo con un solo comando.">
+<link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<header class="site-header">
+<nav class="wrap" aria-label="Principal">
+<a class="brand" href="/"><img src="/assets/logo.svg" width="28" height="28" alt="">Atlas-AttackLab</a>
+<div class="nav-links">
+<a href="/matriz.html">Matriz</a>
+<a href="/descargar.html" aria-current="page">Descargar</a>
+</div>
+</nav>
+</header>
+
+<main>
+<div class="wrap hero" style="align-items: flex-start; padding-top: 64px">
+<div>
+<div class="eyebrow def">Lab local · todo en tu equipo</div>
+<h1 style="font-size: clamp(36px, 5vw, 52px)">Todos los retos, en tu equipo</h1>
+<p>Agentes con herramientas, MCP, RAG y cadena de suministro. Todo corre en Docker, con el modelo incluido. No hay que instalar nada más.</p>
+<div class="note warn">
+<span><strong>Primera versión en preparación.</strong> Estas son las instrucciones con las que se instalará; te avisamos en cuanto esté publicada.</span>
+</div>
+</div>
+
+<div class="card" style="padding: 24px; display: flex; flex-direction: column; gap: 20px">
+<div>
+<p class="muted" style="margin: 0 0 8px; font-size: 15px"><strong style="color: var(--text)">1.</strong> Instala Docker (Docker Desktop en macOS y Windows).</p>
+</div>
+<div>
+<p class="muted" style="margin: 0 0 8px; font-size: 15px"><strong style="color: var(--text)">2.</strong> Descarga la configuración y arranca:</p>
+<pre class="code"><span style="color: var(--faint)">$</span> mkdir atlas-lab &amp;&amp; cd atlas-lab
+<span style="color: var(--faint)">$</span> curl -fsSLO https://[DOMINIO]/lab/compose.yaml
+<span style="color: var(--faint)">$</span> docker compose up</pre>
+</div>
+<div>
+<p class="muted" style="margin: 0; font-size: 15px"><strong style="color: var(--text)">3.</strong> Abre <span class="mono" style="color: var(--defense)">http://127.0.0.1:8080</span>. La primera vez tarda unos minutos mientras se descarga el modelo.</p>
+</div>
+<details>
+<summary style="cursor: pointer; font-weight: 600; font-size: 15px">Comprobar que las imágenes son las oficiales</summary>
+<pre class="code" style="margin-top: 10px">$ cosign verify ghcr.io/[ORG]/atlas-attacklab:[VERSIÓN]</pre>
+</details>
+</div>
+</div>
+
+<section style="padding-top: 0">
+<div class="wrap">
+<h2 class="section-title">Seguro para tu equipo</h2>
+<div class="grid">
+<div class="card"><h3>Solo en tu equipo</h3><p>Escucha en 127.0.0.1. Nadie de tu red puede llegar a los labs vulnerables.</p></div>
+<div class="card"><h3>Sin acceso a tus archivos</h3><p>Los contenedores no montan carpetas tuyas ni tienen privilegios.</p></div>
+<div class="card"><h3>Sin internet para los labs</h3><p>Los retos corren en una red interna. Solo el modelo sale, para descargarse.</p></div>
+<div class="card"><h3>Víctimas de mentira</h3><p>El ERP, el correo y los ficheros que atacas son falsos y viven dentro del lab.</p></div>
+</div>
+</div>
+</section>
+</main>
+
+<footer class="site-footer">
+<div class="wrap">
+<span>Basado en MITRE ATLAS 2026.09 (Apache 2.0). No afiliado a MITRE.</span>
+</div>
+</footer>
+</body>
+</html>

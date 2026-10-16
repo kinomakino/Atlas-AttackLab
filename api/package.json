@@ -1,0 +1,11 @@
+{
+  "name": "atlas-attacklab-api",
+  "private": true,
+  "type": "module",
+  "main": "src/functions/*.js",
+  "scripts": { "test": "node --test" },
+  "dependencies": {
+    "@azure/data-tables": "^13.3.0",
+    "@azure/functions": "^4.6.0"
+  }
+}

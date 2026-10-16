@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matriz ATLAS · Atlas-AttackLab</title>
+<meta name="description" content="La matriz MITRE ATLAS con los retos disponibles en Atlas-AttackLab.">
+<link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<header class="site-header">
+<nav class="wrap wide" aria-label="Principal">
+<a class="brand" href="/"><img src="/assets/logo.svg" width="28" height="28" alt="">Atlas-AttackLab</a>
+<div class="nav-links">
+<a href="/matriz.html" aria-current="page">Matriz</a>
+<a href="/descargar.html">Descargar</a>
+<a class="btn btn-attack btn-small" href="/descargar.html">Empezar</a>
+</div>
+</nav>
+</header>
+
+<main>
+<section style="padding-bottom: 24px">
+<div class="wrap wide">
+<div class="mono muted" style="font-size: 13px" id="version">MITRE ATLAS</div>
+<h1 style="font-size: 44px; margin: 8px 0">La matriz</h1>
+<p class="muted" style="margin: 0; max-width: 680px">Cada columna es una táctica, el objetivo del atacante. Cada casilla, una técnica para conseguirlo. Las que tienen reto se pueden jugar en tu lab: pincha para ver el reto.</p>
+<p class="mono" style="margin: 16px 0 0; font-size: 14px" id="count"></p>
+</div>
+</section>
+
+<section style="padding-top: 0">
+<div class="wrap wide">
+<div class="legend">
+<span><i class="sw" style="background: var(--attack)"></i>Reto gratis</span>
+<span><i class="sw" style="border: 2px solid var(--defense-line); background: var(--defense-bg)"></i>Reto de suscripción</span>
+<span><i class="sw" style="background: #121820"></i>Sin reto todavía</span>
+</div>
+<div class="matrix-box"><div class="matrix" id="matrix"></div></div>
+</div>
+</section>
+</main>
+
+<aside class="drawer" id="drawer" hidden aria-labelledby="d-title" role="dialog">
+<button class="close" type="button" id="d-close" aria-label="Cerrar">✕</button>
+<div class="chips" id="d-chips"></div>
+<h2 id="d-title"></h2>
+<p class="muted" id="d-summary" style="margin: 0"></p>
+<div id="d-meta" class="muted" style="font-size: 14px"></div>
+<div id="d-play"></div>
+</aside>
+
+<footer class="site-footer">
+<div class="wrap wide">
+<span>Basado en MITRE ATLAS 2026.09 (Apache 2.0). No afiliado a MITRE.</span>
+</div>
+</footer>
+<script type="module" src="/assets/matrix.js"></script>
+</body>
+</html>
