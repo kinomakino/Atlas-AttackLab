@@ -113,9 +113,9 @@ deploy/local/   compose.yaml y servicios falsos
 docs/
 ```
 
-## Decisiones abiertas
+## Decisiones
 
-1. **Región:** apps en West Europe y Azure OpenAI en Sweden Central, o todo en zona de datos UE.
-2. **Modelo:** confirmar el "mini" vigente al desplegar. Un modelo más débil hace los retos más fáciles; puede variar por lab.
-3. **Suscripción y tenant de Azure** donde vive.
-4. **Dominio** de la plataforma.
+1. **Región: West Europe para todo.** Azure OpenAI con despliegue *Data Zone Standard (UE)*: los datos no salen de la UE.
+2. **Modelo: gpt-4.1-mini por defecto**, configurable por lab. Precio en West Europe, zona de datos UE: 0,40 €/M de entrada y 1,50 €/M de salida. Más adelante, gpt-5.4-mini (0,73 €/M y 4,36 €/M) para los labs difíciles. Antes de desplegar hay que confirmar cuándo se retira el 4.1-mini.
+3. **Suscripción "LA BUENA 2025"** (`184da419-5261-4409-9f88-808288fc1400`), en el tenant de recursos `579c016e-ba2c-4fd7-abf6-3f963d9d976e`.
+4. **Dominio:** se decide al publicar. Mientras tanto, la URL que da Container Apps. Al cambiarlo hay que actualizar las URL de retorno del login de GitHub y Microsoft.
