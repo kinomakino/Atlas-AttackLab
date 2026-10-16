@@ -41,7 +41,7 @@ Una plataforma para aprender y practicar las técnicas de [MITRE ATLAS](https://
 
 ## 4. Orden de trabajo
 
-1. **Diseño de pantallas**, antes que nada más: portada con la matriz ATLAS, catálogo, página del lab (teoría, consola de ataque, qué pasa por dentro, modo vulnerable/protegido), reto resuelto, login, ranking, perfil, y descarga e instalación del lab local.
+1. ✅ **Diseño de pantallas** (aprobado el 2026-10-16, lienzo privado: https://claude.ai/artifact/SWFEnTmrcW3kPgGBSbv2b3). Estética oscura, ámbar = ataque, cian = defensa; tipografías Space Grotesk, IBM Plex Sans y JetBrains Mono. Pantallas: portada con la matriz ATLAS, catálogo, página del lab (teoría, consola de ataque, qué pasa por dentro, modo vulnerable/protegido), reto resuelto, login, ranking, perfil, y descarga e instalación del lab local.
 2. El backend se adapta a lo que pidan las pantallas.
 3. Primera versión online: 5–6 retos de solo chat, login, puntos y ranking.
 4. Después: labs de agentes, MCP y RAG en local, y eventos.
