@@ -1,13 +1,35 @@
 {
   "routes": [
-    { "route": "/admin*", "allowedRoles": ["admin"] },
-    { "route": "/api/admin/*", "allowedRoles": ["admin"] },
-    { "route": "/login", "redirect": "/.auth/login/aad?post_login_redirect_uri=/admin/" },
-    { "route": "/.auth/login/github", "statusCode": 404 },
-    { "route": "/.auth/login/twitter", "statusCode": 404 }
+    {
+      "route": "/admin*",
+      "allowedRoles": [
+        "admin"
+      ]
+    },
+    {
+      "route": "/api/admin/*",
+      "allowedRoles": [
+        "admin"
+      ]
+    },
+    {
+      "route": "/login",
+      "redirect": "/.auth/login/aad?post_login_redirect_uri=/admin/"
+    },
+    {
+      "route": "/.auth/login/github",
+      "statusCode": 404
+    },
+    {
+      "route": "/.auth/login/twitter",
+      "statusCode": 404
+    }
   ],
   "responseOverrides": {
-    "401": { "redirect": "/.auth/login/aad?post_login_redirect_uri=/admin/", "statusCode": 302 }
+    "401": {
+      "redirect": "/.auth/login/aad?post_login_redirect_uri=/admin/",
+      "statusCode": 302
+    }
   },
   "globalHeaders": {
     "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
@@ -15,6 +37,14 @@
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
   },
-  "mimeTypes": { ".json": "application/json" },
-  "platform": { "apiRuntime": "node:20" }
+  "mimeTypes": {
+    ".json": "application/json",
+    ".sh": "text/plain; charset=utf-8",
+    ".ps1": "text/plain; charset=utf-8",
+    ".sha256": "text/plain; charset=utf-8",
+    ".yaml": "text/yaml; charset=utf-8"
+  },
+  "platform": {
+    "apiRuntime": "node:20"
+  }
 }

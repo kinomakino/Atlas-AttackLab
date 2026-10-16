@@ -32,26 +32,34 @@
 <h1 style="font-size: clamp(36px, 5vw, 52px)">Todos los retos, en tu equipo</h1>
 <p>Agentes con herramientas, MCP, RAG y cadena de suministro. Todo corre en Docker, con el modelo incluido. No hay que instalar nada más.</p>
 <div class="note warn">
-<span><strong>Primera versión en preparación.</strong> Estas son las instrucciones con las que se instalará; te avisamos en cuanto esté publicada.</span>
+<span><strong>Versión 0.1.0 de pruebas, privada.</strong> Para descargar las imágenes hace falta acceso: <span class="mono">docker login ghcr.io</span> con un token de GitHub con permiso <span class="mono">read:packages</span>.</span>
 </div>
 </div>
 
 <div class="card" style="padding: 24px; display: flex; flex-direction: column; gap: 20px">
 <div>
-<p class="muted" style="margin: 0 0 8px; font-size: 15px"><strong style="color: var(--text)">1.</strong> Instala Docker (Docker Desktop en macOS y Windows).</p>
+<p class="muted" style="margin: 0 0 8px; font-size: 15px"><strong style="color: var(--text)">1.</strong> Instala Docker (Docker Desktop en macOS y Windows) y arráncalo.</p>
 </div>
 <div>
-<p class="muted" style="margin: 0 0 8px; font-size: 15px"><strong style="color: var(--text)">2.</strong> Descarga la configuración y arranca:</p>
-<pre class="code"><span style="color: var(--faint)">$</span> mkdir atlas-lab &amp;&amp; cd atlas-lab
-<span style="color: var(--faint)">$</span> curl -fsSLO https://[DOMINIO]/lab/compose.yaml
-<span style="color: var(--faint)">$</span> docker compose up</pre>
+<p class="muted" style="margin: 0 0 8px; font-size: 15px"><strong style="color: var(--text)">2.</strong> macOS y Linux, en una terminal:</p>
+<pre class="code"><span style="color: var(--faint)">$</span> curl -fsSLO https://witty-rock-0c004b703.6.azurestaticapps.net/install.sh
+<span style="color: var(--faint)">$</span> less install.sh        <span style="color: var(--faint)"># léelo antes de ejecutarlo</span>
+<span style="color: var(--faint)">$</span> bash install.sh</pre>
 </div>
 <div>
-<p class="muted" style="margin: 0; font-size: 15px"><strong style="color: var(--text)">3.</strong> Abre <span class="mono" style="color: var(--defense)">http://127.0.0.1:8080</span>. La primera vez tarda unos minutos mientras se descarga el modelo.</p>
+<p class="muted" style="margin: 0 0 8px; font-size: 15px"><strong style="color: var(--text)">2.</strong> Windows, en PowerShell:</p>
+<pre class="code">&gt; Invoke-WebRequest https://witty-rock-0c004b703.6.azurestaticapps.net/install.ps1 -OutFile install.ps1
+&gt; notepad install.ps1      <span style="color: var(--faint)"># léelo antes de ejecutarlo</span>
+&gt; powershell -ExecutionPolicy Bypass -File install.ps1</pre>
+</div>
+<div>
+<p class="muted" style="margin: 0; font-size: 15px"><strong style="color: var(--text)">3.</strong> El instalador revisa tu equipo, se configura solo y abre el lab. Después tienes el comando <span class="mono" style="color: var(--defense)">atlas-lab</span> (start, stop, status, update, uninstall…).</p>
 </div>
 <details>
-<summary style="cursor: pointer; font-weight: 600; font-size: 15px">Comprobar que las imágenes son las oficiales</summary>
-<pre class="code" style="margin-top: 10px">$ cosign verify ghcr.io/[ORG]/atlas-attacklab:[VERSIÓN]</pre>
+<summary style="cursor: pointer; font-weight: 600; font-size: 15px">Comprobar que el instalador es el oficial (SHA-256)</summary>
+<pre class="code" style="margin-top: 10px">a0ab47765600c2fc28b1f804cbaaf13f96904fb62e8dc7a6e50c764900268d2a  install.sh
+c5a40cbb2c8a7b38c81ef96ca85f03dba5b7996621f4fcbf45f4bc0116403235  install.ps1</pre>
+<p class="muted" style="font-size: 14px; margin: 8px 0 0">También en <a href="/install.sha256">install.sha256</a>. Con <span class="mono">cosign</span> instalado, el instalador verifica además la firma de la imagen.</p>
 </details>
 </div>
 </div>
