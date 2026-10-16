@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Atlas-AttackLab · Ataca la IA, aprende a defenderla</title>
-<meta name="description" content="Lab local para practicar las técnicas de MITRE ATLAS atacando sistemas de IA vulnerables. Todo corre en tu equipo.">
-<link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
+<title>Atlas-AttackLab · Plataforma de aprendizaje de hacking de IA</title>
+<meta name="description" content="Aprende hacking de IA con retos prácticos basados en MITRE ATLAS: prompt injection, jailbreak, RAG, agentes y MCP. Un lab que corre en tu equipo, de seguridad/si.">
+<link rel="icon" href="/assets/brand/favicon.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -14,11 +14,13 @@
 <body>
 <header class="site-header">
 <nav class="wrap" aria-label="Principal">
-<a class="brand" href="/"><img src="/assets/logo.svg" width="28" height="28" alt="">Atlas-AttackLab</a>
+<a class="brand" href="/"><img src="/assets/brand/marca-96.png" width="34" height="34" alt="">
+<span>Atlas-AttackLab<small>by seguridad/si</small></span></a>
 <div class="nav-links">
+<a href="#aprender">Qué aprendes</a>
 <a href="/matriz.html">Matriz</a>
-<a href="/descargar.html">Descargar</a>
-<a class="btn btn-attack btn-small" href="/descargar.html">Empezar</a>
+<a href="https://www.seguridadsi.com/membresia">Academia</a>
+<a class="btn btn-attack btn-small" href="/descargar.html">Descargar</a>
 </div>
 </nav>
 </header>
@@ -26,13 +28,14 @@
 <main>
 <div class="wrap hero">
 <div>
-<div class="eyebrow">MITRE ATLAS · 16 tácticas · 208 técnicas</div>
-<h1>Ataca la IA.<br>Aprende a defenderla.</h1>
-<p>Retos prácticos contra sistemas de IA vulnerables, ordenados por la matriz MITRE ATLAS. Todo corre en tu equipo: rompe el modelo, mira qué pasa por dentro y vuelve a intentarlo contra la versión protegida.</p>
+<div class="eyebrow">Plataforma de aprendizaje de hacking de IA</div>
+<h1>Aprende a hackear la IA.<br>Y a defenderla.</h1>
+<p>Retos prácticos contra sistemas de IA vulnerables, ordenados por la matriz MITRE ATLAS. Montas el lab en tu equipo, atacas un asistente, un agente o un RAG de verdad… y ves por dentro por qué ha caído.</p>
 <div class="actions">
 <a class="btn btn-attack" href="/descargar.html">Descargar el lab</a>
 <a class="btn btn-ghost" href="/matriz.html">Ver la matriz</a>
 </div>
+<p class="byline">Un proyecto de <a href="https://www.seguridadsi.com">seguridad/si</a> · Joaquín Molina «Kinomakino», Microsoft MVP y +25 años en ciberseguridad.</p>
 </div>
 <div class="term" aria-label="Ejemplo de un reto">
 <div class="term-bar"><i></i><i></i><i></i><span style="margin-left: 10px">AML.T0051.000 · Saca el secreto del asistente</span></div>
@@ -49,14 +52,67 @@
 </div>
 </div>
 
+<section class="band">
+<div class="wrap prose">
+<h2 class="section-title">Por qué un lab de hacking de IA</h2>
+<p>Las empresas están metiendo LLM´s, agentes y RAG en producción. Con herramientas conectadas al ERP, al correo y a los documentos internos.</p>
+<p>Y los que auditamos seguimos, muchas veces, con la checklist de siempre…</p>
+<p>No faltan artículos sobre prompt injection. Lo que falta es haberlo roto con tus propias manos. Ver qué recibe el modelo, por qué obedece al atacante y qué defensa protege de verdad… y cuál solo lo parece 🙂</p>
+<p>Para eso está Atlas-AttackLab: cada reto es una técnica real de <a href="https://atlas.mitre.org">MITRE ATLAS</a>, el «ATT&amp;CK» de los sistemas de IA.</p>
+</div>
+</section>
+
+<section id="aprender">
+<div class="wrap">
+<h2 class="section-title">Qué vas a aprender</h2>
+<div class="grid">
+<div class="card"><div class="chips"><span class="chip">AML.T0051</span></div><h3>Prompt injection</h3><p>Directa e indirecta: cuando el modelo obedece al atacante en vez de a quien lo programó.</p></div>
+<div class="card"><div class="chips"><span class="chip">AML.T0056</span><span class="chip">AML.T0057</span></div><h3>Fuga de instrucciones y datos</h3><p>Sacar el prompt del sistema, secretos y datos que el modelo tenía «guardados».</p></div>
+<div class="card"><div class="chips"><span class="chip">AML.T0054</span><span class="chip">AML.T0068</span></div><h3>Jailbreak y evasión</h3><p>Saltarse las reglas y los filtros de entrada y salida. Y entender por qué los filtros solos no bastan.</p></div>
+<div class="card"><div class="chips"><span class="chip">AML.T0070</span><span class="chip">AML.T0080</span></div><h3>Envenenamiento de RAG y memoria</h3><p>Colar un documento o un recuerdo que cambia lo que responde el sistema… hoy y en la próxima sesión.</p></div>
+<div class="card"><div class="chips"><span class="chip">AML.T0053</span><span class="chip">AML.T0086</span></div><h3>Agentes y MCP</h3><p>Agentes con herramientas y permisos de más: invocar lo que no toca y sacar datos por el correo del propio agente.</p></div>
+<div class="card"><div class="chips"><span class="chip">AML.T0010</span></div><h3>Cadena de suministro</h3><p>Modelos y componentes que se incorporan sin verificar. El «npm install» de la IA.</p></div>
+</div>
+</div>
+</section>
+
+<section>
+<div class="wrap split">
+<div>
+<h2 class="section-title">Lo que vas a conseguir</h2>
+<p class="muted">No es leer qué es un ataque. Es ejecutarlo, entender por qué funciona y saber cómo cerrarlo.</p>
+</div>
+<ul class="checks">
+<li><strong>Hablar MITRE ATLAS</strong> en una auditoría o un informe, con técnicas y mitigaciones oficiales.</li>
+<li><strong>Probar un sistema de IA</strong> antes de que lo haga otro: asistentes, RAG, agentes y servidores MCP.</li>
+<li><strong>Distinguir defensas</strong> que protegen de verdad de las que solo lo parecen.</li>
+<li><strong>Tener tu propio laboratorio</strong> para demostrar el riesgo a tu equipo o a tu cliente.</li>
+<li><strong>Criterio para revisar arquitecturas</strong> que meten IA: qué preguntar y dónde mirar.</li>
+</ul>
+</div>
+</section>
+
 <section>
 <div class="wrap">
 <h2 class="section-title">Cómo funciona</h2>
 <div class="grid">
-<div class="card"><div class="step-n">01</div><h3>Elige una técnica</h3><p>Cada reto es una técnica real de la matriz ATLAS, con su teoría y sus mitigaciones oficiales.</p></div>
+<div class="card"><div class="step-n">01</div><h3>Elige una técnica</h3><p>En la matriz ATLAS. Cada reto trae su teoría y sus mitigaciones oficiales.</p></div>
 <div class="card"><div class="step-n">02</div><h3>Ataca y observa</h3><p>Mientras atacas ves qué recibe el modelo, qué defensas saltan y por qué el juez da el reto por resuelto o no.</p></div>
-<div class="card"><div class="step-n">03</div><h3>Rompe la versión protegida</h3><p>Repite contra el sistema con defensas. Ahí se aprende qué protege de verdad y qué solo lo parece.</p></div>
+<div class="card"><div class="step-n">03</div><h3>Rompe la versión protegida</h3><p>Repite contra el sistema con defensas. Ahí es donde se aprende de verdad.</p></div>
 </div>
+</div>
+</section>
+
+<section>
+<div class="wrap">
+<h2 class="section-title">Para quién es</h2>
+<div class="grid">
+<div class="card"><h3>Pentesters y Red Team</h3><p>Que ya les están pidiendo auditar aplicaciones con IA y quieren método, no improvisar.</p></div>
+<div class="card"><h3>Blue Team y SOC</h3><p>Que necesitan saber cómo se ve un ataque a un LLM para poder detectarlo.</p></div>
+<div class="card"><h3>Desarrolladores que integran IA</h3><p>Que quieren saber qué puede salir mal antes de dar permisos a un agente.</p></div>
+<div class="card"><h3>Responsables de seguridad</h3><p>Que tienen que decidir si ese proyecto de IA sale a producción… y con qué controles.</p></div>
+</div>
+<p class="muted" style="margin: 20px 0 0; font-size: 15px">Necesitas base técnica en informática y saber arrancar Docker. No hace falta ser experto en IA: para eso están los retos.</p>
 </div>
 </section>
 
@@ -80,13 +136,57 @@
 <div class="tactic-chips" id="tactics"></div>
 </div>
 </section>
+
+<section>
+<div class="wrap">
+<div class="academy">
+<img src="/assets/brand/marca.png" width="96" height="96" alt="seguridad/si">
+<div class="academy-text">
+<div class="eyebrow">Academia seguridad/si</div>
+<h2>Los retos te enseñan a romper. La academia, todo lo demás.</h2>
+<p class="muted">Cómo se monta un Red Team, cómo se audita, cómo se detecta en un SOC… Si tienes cursos empezados y ninguno terminado, la membresía es un sistema para avanzar a tu ritmo: rutas, directos cada 15 días y gente que va a lo mismo que tú.</p>
+<div class="actions" style="margin-top: 20px">
+<a class="btn btn-attack" href="https://www.seguridadsi.com/membresia">Conoce la membresía</a>
+<a class="btn btn-ghost" href="https://www.seguridadsi.com/todos-cursos">Ver todos los cursos</a>
+</div>
+<ul class="links">
+<li><a href="https://www.seguridadsi.com/curso/curso-de-introduccion-a-la-inteligencia-artificial">Curso de introducción a la Inteligencia Artificial</a></li>
+<li><a href="https://www.seguridadsi.com/curso/cursomitre">Marco de trabajo MITRE ATT&amp;CK</a></li>
+<li><a href="https://www.seguridadsi.com/capacitacion/ruta-cursos-hacking-etico">Ruta profesional en Hacking Ético</a></li>
+</ul>
+</div>
+</div>
+<div class="note" style="margin-top: 20px">
+<span><strong>¿Tu empresa está metiendo IA en producción?</strong> Auditamos aplicaciones con LLM´s, agentes y RAG. <a href="https://www.seguridadsi.com/servicios">Servicios de auditoría y consultoría</a></span>
+</div>
+</div>
+</section>
+
+<section>
+<div class="wrap prose">
+<h2 class="section-title">Preguntas frecuentes</h2>
+<details class="faq"><summary>¿Es gratis?</summary><p>La herramienta y los primeros retos, sí. Más adelante habrá retos de suscripción, que aparecerán en la matriz con su marca.</p></details>
+<details class="faq"><summary>¿Necesito una GPU?</summary><p>No. Funciona sin GPU, aunque más despacio. Si ya tienes Ollama con GPU, el lab puede usarlo.</p></details>
+<details class="faq"><summary>¿Es legal?</summary><p>Sí: atacas sistemas del propio lab, que corren en tu equipo y están hechos para eso. Nada sale fuera. Lo que aprendas, úsalo solo donde tengas autorización.</p></details>
+<details class="faq"><summary>¿Qué es MITRE ATLAS?</summary><p>Una base de conocimiento de MITRE con las tácticas y técnicas que usan los atacantes contra sistemas de IA. Si conoces ATT&amp;CK, es lo mismo pero para IA. Más en <a href="https://atlas.mitre.org">atlas.mitre.org</a>.</p></details>
+<details class="faq"><summary>¿Cuándo puedo instalarlo?</summary><p>La primera versión está en preparación. En la página de <a href="/descargar.html">descarga</a> tienes cómo será la instalación.</p></details>
+</div>
+</section>
 </main>
 
 <footer class="site-footer">
 <div class="wrap">
-<span>Basado en MITRE ATLAS 2026.09 (Apache 2.0). No afiliado a MITRE.</span>
+<a href="https://www.seguridadsi.com" class="footer-brand"><img src="/assets/brand/seguridadsi.png" width="200" height="39" alt="seguridad/si ciberseguridad"></a>
+<nav class="footer-links" aria-label="seguridad/si">
+<a href="https://www.seguridadsi.com/membresia">Membresía</a>
+<a href="https://www.seguridadsi.com/todos-cursos">Cursos</a>
+<a href="https://www.seguridadsi.com/servicios">Servicios</a>
+<a href="https://www.seguridadsi.com/contacto">Contacto</a>
+</nav>
+<span class="footer-note">Basado en MITRE ATLAS 2026.09 (Apache 2.0). No afiliado a MITRE.</span>
 </div>
 </footer>
 <script type="module" src="/assets/home.js"></script>
+<script type="module" src="/assets/nav.js"></script>
 </body>
 </html>
