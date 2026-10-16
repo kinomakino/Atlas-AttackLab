@@ -146,7 +146,13 @@ COMPOSE_FILE=$composeFiles
 Ok "Configuración guardada en $envFile"
 
 Say 'Descargando las imágenes (la primera vez tarda unos minutos)...'
-if ((Invoke-Docker compose pull --quiet).Code -ne 0) { Die 'No se han podido descargar las imágenes.' 'Comprueba la conexión. Si usas un proxy, configúralo en Docker Desktop.' 32 }
+$pull = Invoke-Docker compose pull --quiet
+if ($pull.Code -ne 0) {
+  if ($pull.Out -match 'denied|unauthorized|authentication') {
+    Die 'El registro de imágenes pide iniciar sesión (versión privada de pruebas).' 'Ejecuta: docker login ghcr.io  (usuario de GitHub y un token con permiso read:packages) y vuelve a lanzar el instalador.' 36
+  }
+  Die 'No se han podido descargar las imágenes.' 'Comprueba la conexión. Si usas un proxy, configúralo en Docker Desktop.' 32
+}
 
 if (Get-Command cosign -ErrorAction SilentlyContinue) {
   & cosign verify "ghcr.io/kinomakino/atlas-attacklab:$Version" `

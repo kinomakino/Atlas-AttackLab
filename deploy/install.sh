@@ -205,7 +205,14 @@ EOF
 ok "Configuración guardada en $INSTALL_DIR/.env"
 
 say "Descargando las imágenes (la primera vez tarda unos minutos)…"
-"$DOCKER" compose pull --quiet || die "No se han podido descargar las imágenes." "Comprueba la conexión. Si usas un proxy, configúralo en Docker." 32
+if ! pull_err="$("$DOCKER" compose pull --quiet 2>&1)"; then
+  case "$pull_err" in
+    *denied*|*unauthorized*|*authentication*)
+      die "El registro de imágenes pide iniciar sesión (versión privada de pruebas)." \
+          "Ejecuta: docker login ghcr.io  (usuario de GitHub y un token con permiso read:packages) y vuelve a lanzar el instalador." 36 ;;
+    *) die "No se han podido descargar las imágenes." "Comprueba la conexión. Si usas un proxy, configúralo en Docker." 32 ;;
+  esac
+fi
 
 if command -v cosign >/dev/null 2>&1; then
   if cosign verify "${ATTACKLAB_IMAGE:-ghcr.io/kinomakino/atlas-attacklab}:$VERSION" \
