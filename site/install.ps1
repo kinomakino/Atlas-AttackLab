@@ -359,8 +359,14 @@ COMPOSE_FILE=$composeFiles
 "@ | Set-Content -Encoding ASCII $envFile
 Ok "Configuración guardada en $envFile"
 
-Say 'Descargando las imágenes (la primera vez tarda unos minutos)...'
-$pull = Invoke-Docker compose pull --quiet
+# Con el progreso a la vista: son unos 4 GB y sin barras parece colgado. Si falla, se
+# repite en silencio para leer el error y explicarlo.
+Say 'Descargando las imágenes del lab: unos 4 GB la primera vez (casi todo es Ollama, el servidor del modelo).'
+Say 'Según tu conexión, entre 5 y 30 minutos. Verás el progreso aquí abajo.'
+$prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+try { & $script:Docker compose pull; $pullCode = $LASTEXITCODE } finally { $ErrorActionPreference = $prev }
+$pull = @{ Code = 0; Out = '' }
+if ($pullCode -ne 0) { $pull = Invoke-Docker compose pull --quiet }
 if ($pull.Code -ne 0) {
   if ($pull.Out -match 'denied|unauthorized|authentication') {
     Die 'El registro de imágenes pide iniciar sesión.' 'Vuelve a ejecutar el instalador sin -Yes: te guiará para iniciar sesión con tu usuario de GitHub y un token.' 36

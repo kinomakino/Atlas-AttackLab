@@ -370,8 +370,11 @@ COMPOSE_FILE=$(echo "$FILES" | sed 's/-f //g; s/ /:/g')
 EOF
 ok "Configuración guardada en $INSTALL_DIR/.env"
 
-say "Descargando las imágenes (la primera vez tarda unos minutos)…"
-if ! pull_err="$("$DOCKER" compose pull --quiet 2>&1)"; then
+# Con el progreso a la vista: son unos 4 GB y sin barras parece colgado. Si falla, se
+# repite en silencio para leer el error y explicarlo.
+say "Descargando las imágenes del lab: unos 4 GB la primera vez (casi todo es Ollama, el servidor del modelo)."
+say "Según tu conexión, entre 5 y 30 minutos. Verás el progreso aquí abajo."
+if ! "$DOCKER" compose pull && ! pull_err="$("$DOCKER" compose pull --quiet 2>&1)"; then
   case "$pull_err" in
     *denied*|*unauthorized*|*authentication*)
       die "El registro de imágenes pide iniciar sesión." \
