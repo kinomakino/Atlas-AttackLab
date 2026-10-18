@@ -73,13 +73,14 @@ $('restart').addEventListener('click', restart);
 // Conversación
 function bubble(role, text) {
   const mine = role === 'user';
-  $('chat').append(el('div', {
+  const b = $('chat').appendChild(el('div', {
     style: `max-width: 78%; padding: 12px 14px; white-space: pre-wrap; align-self: ${mine ? 'flex-end' : 'flex-start'}; ` +
       `border-radius: ${mine ? '12px 12px 4px 12px' : '12px 12px 12px 4px'}; ` +
       (mine ? 'background: var(--attack-bg); border: 1px solid var(--attack-line)' : 'background: var(--surface-2)'),
     textContent: text,
   }));
   $('chat').scrollTop = $('chat').scrollHeight;
+  return b;
 }
 
 const BADGE = {
@@ -134,11 +135,27 @@ $('form').addEventListener('submit', async (e) => {
   $('send').disabled = true;
   messages.push({ role: 'user', content: text });
   bubble('user', text);
+  // Sin GPU el modelo puede tardar: que se vea que está trabajando y cuánto lleva.
+  const started = Date.now();
+  const thinking = bubble('assistant', 'El asistente está pensando…');
+  thinking.style.opacity = '0.7';
+  const timer = setInterval(() => {
+    const s = Math.round((Date.now() - started) / 1000);
+    thinking.textContent = `El asistente está pensando… ${s} s` + (s >= 30 ? '\nSin GPU tarda más; espera, la respuesta llegará.' : '');
+  }, 1000);
+  let r;
   try {
-    const r = await fetch(`/api/retos/${encodeURIComponent(id)}/attempt`, {
+    const resp = await fetch(`/api/retos/${encodeURIComponent(id)}/attempt`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mode, messages, hints_used: hintsUsed }),
-    }).then((x) => x.json());
+    });
+    r = await resp.json().catch(() => ({ error: `El lab ha devuelto un error (${resp.status}). Vuelve a intentarlo; si se repite, ejecuta «atlas-lab logs».` }));
+  } catch {
+    r = { error: 'No se puede hablar con el lab: parece que se ha parado. Arráncalo con «atlas-lab start» (o vuelve a ejecutar el instalador) y recarga la página.' };
+  }
+  clearInterval(timer);
+  thinking.remove();
+  try {
     showTrace(r.trace || []);
     if (r.reply == null) {
       messages.pop();
