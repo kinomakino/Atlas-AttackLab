@@ -38,14 +38,14 @@
 </div>
 
 <div class="card" style="padding: 24px; display: flex; flex-direction: column; gap: 20px">
-<div>
-<p class="muted" style="margin: 0 0 8px; font-size: 15px"><strong style="color: var(--text)">1.</strong> macOS y Linux, en una terminal:</p>
+<div data-os="unix">
+<p class="muted" style="margin: 0 0 8px; font-size: 15px"><strong style="color: var(--text)">1. macOS y Linux</strong> <span class="chip os-badge" hidden>Tu sistema</span><br>Abre la app Terminal (en Mac: Cmd + Espacio y escribe «Terminal») y pega:</p>
 <pre class="code"><span style="color: var(--faint)">$</span> curl -fsSLO https://witty-rock-0c004b703.6.azurestaticapps.net/install.sh
 <span style="color: var(--faint)">$</span> less install.sh        <span style="color: var(--faint)"># léelo antes de ejecutarlo</span>
 <span style="color: var(--faint)">$</span> bash install.sh</pre>
 </div>
-<div>
-<p class="muted" style="margin: 0 0 8px; font-size: 15px"><strong style="color: var(--text)">1.</strong> Windows, en PowerShell:</p>
+<div data-os="windows">
+<p class="muted" style="margin: 0 0 8px; font-size: 15px"><strong style="color: var(--text)">1. Windows</strong> <span class="chip os-badge" hidden>Tu sistema</span><br>Abre PowerShell (tecla Windows y escribe «PowerShell») y pega, una línea cada vez. Los comandos de macOS y Linux no sirven aquí:</p>
 <pre class="code">&gt; Invoke-WebRequest https://witty-rock-0c004b703.6.azurestaticapps.net/install.ps1 -OutFile install.ps1
 &gt; notepad install.ps1      <span style="color: var(--faint)"># léelo antes de ejecutarlo</span>
 &gt; powershell -ExecutionPolicy Bypass -File install.ps1</pre>
@@ -101,6 +101,7 @@
 <span class="footer-note">Basado en MITRE ATLAS 2026.09 (Apache 2.0). No afiliado a MITRE.</span>
 </div>
 </footer>
+<script type="module" src="/assets/descargar.js"></script>
 <script type="module" src="/assets/nav.js"></script>
 </body>
 </html>
