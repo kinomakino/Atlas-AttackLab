@@ -54,9 +54,12 @@ function Die($m, $hint, [int]$code = 1) {
   if ($hint) { Write-Host "   $hint" }
   exit $code
 }
-function Invoke-Docker { param([Parameter(ValueFromRemainingArguments)]$a)
+function Invoke-Docker {
+  # Función simple con $args, sin param(): en una función avanzada PowerShell se queda
+  # opciones como -d (la toma por -Debug) y docker no las recibe.
   # En PowerShell 5.1, con ErrorActionPreference=Stop, cualquier línea en stderr de un
   # comando externo se convierte en excepción. Aquí queremos el código de salida, no eso.
+  $a = $args
   $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
   try {
     $out = & $script:Docker @a 2>&1
@@ -384,16 +387,15 @@ if (Get-Command cosign -ErrorAction SilentlyContinue) {
 
 # Con la salida de Docker a la vista: si pregunta algo, el alumno lo ve y contesta. Si el lab
 # no arranca, el instalador enseña él mismo el estado y los registros.
-function Invoke-DockerLive { param([Parameter(ValueFromRemainingArguments)]$a)
-  $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
-  try { & $script:Docker @a | Out-Host; return $LASTEXITCODE } finally { $ErrorActionPreference = $prev }   # a pantalla; solo se devuelve el código
-}
 function Show-Diag {
-  Write-Host "`nEstado del lab:" -ForegroundColor White; Invoke-DockerLive compose ps -a | Out-Null
-  Write-Host "`nÚltimos registros:" -ForegroundColor White; Invoke-DockerLive compose logs --tail 40 | Out-Null
+  Write-Host "`nEstado del lab:" -ForegroundColor White; Write-Host (Invoke-Docker compose ps -a).Out
+  Write-Host "`nÚltimos registros:" -ForegroundColor White; Write-Host (Invoke-Docker compose logs --tail 40).Out
 }
 Say 'Arrancando el lab (lo que hace Docker sale aquí abajo)...'
-if ((Invoke-DockerLive compose up -d --remove-orphans) -ne 0) {
+# Llamada directa, no dentro de una función: así docker escribe en la consola tal cual.
+$prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+try { & $script:Docker compose up -d --remove-orphans; $upCode = $LASTEXITCODE } finally { $ErrorActionPreference = $prev }
+if ($upCode -ne 0) {
   Show-Diag; Die 'No se ha podido arrancar el lab.' 'Arriba tienes el estado y los registros de Docker: si no ves la causa, mándanoslos.' 34
 }
 
