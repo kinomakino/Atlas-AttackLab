@@ -120,6 +120,17 @@ else { $fail++; "FALLA .wslconfig nuevo: $((Get-Content $wc2) -join '|')" }
 RunI 'sin acceso: inicia sesion con el token' 0 'ghcr.io como alumno' @('n', 'alumno', 'ghp_bueno') @{ FAKE_PRIVATE = 1; FAKE_TOKEN = 'ghp_bueno' } @('-Check')
 RunI 'token rechazado y el alumno sale' 36 'no ha aceptado' @('n', 'alumno', 'malo', 'q') @{ FAKE_PRIVATE = 1; FAKE_TOKEN = 'ghp_bueno' } @('-Check')
 
+# Invoke-Docker debe pasar a docker todas las opciones. En una función avanzada PowerShell
+# se quedaba -d (lo tomaba por -Debug) y "compose up -d" arrancaba pegado a la consola.
+$echo = Join-Path $work 'echo.ps1'
+'$args -join " "' | Set-Content -Encoding UTF8 $echo
+$fn = [regex]::Match((Get-Content -Raw -Encoding UTF8 $installer), '(?s)function Invoke-Docker \{.*?\n\}').Value
+. ([scriptblock]::Create($fn))
+$Docker = $echo
+$got = (Invoke-Docker compose up -d --remove-orphans).Out
+if ($got -eq 'compose up -d --remove-orphans') { $pass++; 'ok    Invoke-Docker pasa -d y el resto de opciones a docker' }
+else { $fail++; "FALLA Invoke-Docker: docker recibió '$got'" }
+
 Remove-Item -Recurse -Force $work
 "`n$pass correctas, $fail fallidas"
 if ($fail -gt 0) { exit 1 }
