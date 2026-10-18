@@ -61,3 +61,42 @@ def test_el_contexto_nunca_ensena_la_flag_antes_de_resolver(reto, monkeypatch):
     fake_model(monkeypatch, lambda f: "nada")
     r = ask(reto, "vulnerable")
     assert engine.flag_for(reto, "vulnerable") not in str(r["trace"])
+
+
+def test_progreso_de_descarga_del_total_y_sin_bajar(monkeypatch):
+    """Ollama informa por capas; el porcentaje es del total y no vuelve a 0 con las capas pequeñas."""
+    import json
+    from contextlib import contextmanager
+
+    from attacklab import llm
+
+    eventos = [
+        {"status": "pulling manifest"},
+        {"status": "pulling a", "digest": "a", "total": 1000, "completed": 500},
+        {"status": "pulling a", "digest": "a", "total": 1000, "completed": 1000},
+        {"status": "pulling b", "digest": "b", "total": 10, "completed": 0},
+        {"status": "pulling b", "digest": "b", "total": 10, "completed": 10},
+        {"status": "verifying sha256 digest"},
+        {"status": "success"},
+    ]
+    vistos = []
+
+    class Resp:
+        def raise_for_status(self):
+            pass
+
+        def iter_lines(self):
+            for e in eventos:
+                yield json.dumps(e)
+                vistos.append(llm.pulls["m"]["percent"])
+
+    @contextmanager
+    def stream(*a, **k):
+        yield Resp()
+
+    monkeypatch.setattr(llm.httpx, "stream", stream)
+    llm.pulls["m"] = {"status": "", "percent": 0, "done": False, "error": None}
+    llm._pull("m")
+    assert vistos == sorted(vistos), vistos          # nunca baja
+    assert vistos[2] == 99 and max(vistos[:-1]) <= 99  # 100 solo al terminar
+    assert llm.pulls["m"]["done"] and llm.pulls["m"]["percent"] == 100

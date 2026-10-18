@@ -17,7 +17,9 @@ export async function watchModels(box) {
     const [name, m] = missing[0];
     const pull = m.pull;
     if (pull && !pull.error && !pull.done) {
-      show(`Descargando el modelo ${name}: ${pull.percent ?? 0} %. Solo pasa la primera vez.`, true);
+      const checking = /verifying|writing|success/.test(pull.status || '');
+      show(checking ? `Modelo ${name} descargado. Comprobándolo, unos segundos…`
+        : `Descargando el modelo ${name}: ${pull.percent ?? 0} %. Solo pasa la primera vez.`, true);
     } else {
       const btn = Object.assign(document.createElement('button'), {
         type: 'button', className: 'btn btn-attack btn-small', textContent: `Descargar ${name}`,

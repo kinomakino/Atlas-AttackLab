@@ -36,7 +36,11 @@ def has_model(model: str) -> bool:
 
 
 def _pull(model: str) -> None:
+    # Ollama baja el modelo por capas (la grande y luego varias pequeñas), y cada una informa
+    # de su propio avance. El porcentaje es del total y nunca baja: si no, al pasar a las capas
+    # pequeñas volvía a 0 % y parecía que la descarga empezaba de nuevo.
     state = pulls[model]
+    layers: dict[str, tuple[int, int]] = {}
     try:
         with httpx.stream("POST", f"{OLLAMA_URL}/api/pull", json={"model": model}, timeout=None) as resp:
             resp.raise_for_status()
@@ -48,7 +52,10 @@ def _pull(model: str) -> None:
                     raise RuntimeError(ev["error"])
                 state["status"] = ev.get("status", "")
                 if ev.get("total"):
-                    state["percent"] = round(100 * ev.get("completed", 0) / ev["total"])
+                    layers[ev.get("digest", "")] = (ev.get("completed", 0), ev["total"])
+                    done = sum(c for c, _ in layers.values())
+                    total = sum(t for _, t in layers.values())
+                    state["percent"] = max(state["percent"], min(99, 100 * done // total))
         state.update(done=True, percent=100)
     except Exception as e:  # noqa: BLE001 — se enseña al usuario tal cual
         state.update(error=str(e))
