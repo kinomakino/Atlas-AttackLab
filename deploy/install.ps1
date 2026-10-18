@@ -193,24 +193,22 @@ function Test-PortInUse([int]$p) {
 }
 
 function Show-Logo {  # el logotipo de seguridad/si: corchetes en blanco, la figura en gris
-  Write-Host ' __                     __' -ForegroundColor White
-  foreach ($l in @(
-  '          _____          ',
-  '        _|     |_        ',
-  '       |_________|       ',
-  '         / ___ \         ',
-  '        | (   ) |        ',
-  '         \ | | /         ',
-  '          \|_|/          ',
-  '           \_/           '
-  )) {
-    Write-Host -NoNewline '|' -ForegroundColor White
-    Write-Host -NoNewline $l -ForegroundColor DarkGray
-    Write-Host '|' -ForegroundColor White
-  }
-  Write-Host '|__                     __|' -ForegroundColor White
-  Write-Host '  s e g u r i d a d / s i' -ForegroundColor White
-  Write-Host "c i b e r s e g u r i d a d`n" -ForegroundColor DarkGray
+  Write-Host '███████                    ███████' -ForegroundColor White
+  Write-Host -NoNewline '██' -ForegroundColor White; Write-Host -NoNewline '            ▄▄  ▄▄            ' -ForegroundColor DarkGray; Write-Host '██' -ForegroundColor White
+  Write-Host -NoNewline '██' -ForegroundColor White; Write-Host -NoNewline '          ▄████████▄          ' -ForegroundColor DarkGray; Write-Host '██' -ForegroundColor White
+  Write-Host -NoNewline '██' -ForegroundColor White; Write-Host -NoNewline '          ██████████          ' -ForegroundColor DarkGray; Write-Host '██' -ForegroundColor White
+  Write-Host -NoNewline '██' -ForegroundColor White; Write-Host -NoNewline '          ▄▄▄▄▄▄▄▄▄▄          ' -ForegroundColor DarkGray; Write-Host '██' -ForegroundColor White
+  Write-Host -NoNewline '██' -ForegroundColor White; Write-Host -NoNewline '    ▀▀██████████████████▀▀    ' -ForegroundColor DarkGray; Write-Host '██' -ForegroundColor White
+  Write-Host -NoNewline '██' -ForegroundColor White; Write-Host -NoNewline '      ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄      ' -ForegroundColor DarkGray; Write-Host '██' -ForegroundColor White
+  Write-Host -NoNewline '██' -ForegroundColor White; Write-Host -NoNewline '      ███████▀▀▀▀███████      ' -ForegroundColor DarkGray; Write-Host '██' -ForegroundColor White
+  Write-Host -NoNewline '██' -ForegroundColor White; Write-Host -NoNewline '       ▀█████    █████▀       ' -ForegroundColor DarkGray; Write-Host '██' -ForegroundColor White
+  Write-Host -NoNewline '██' -ForegroundColor White; Write-Host -NoNewline '         ▀████  ████▀         ' -ForegroundColor DarkGray; Write-Host '██' -ForegroundColor White
+  Write-Host -NoNewline '██' -ForegroundColor White; Write-Host -NoNewline '           ██▄▄▄▄██           ' -ForegroundColor DarkGray; Write-Host '██' -ForegroundColor White
+  Write-Host -NoNewline '██' -ForegroundColor White; Write-Host -NoNewline '            ▀████▀            ' -ForegroundColor DarkGray; Write-Host '██' -ForegroundColor White
+  Write-Host -NoNewline '██' -ForegroundColor White; Write-Host -NoNewline '              ▀▀              ' -ForegroundColor DarkGray; Write-Host '██' -ForegroundColor White
+  Write-Host '███████                    ███████' -ForegroundColor White
+  Write-Host '     s e g u r i d a d / s i' -ForegroundColor White
+  Write-Host "   c i b e r s e g u r i d a d`n" -ForegroundColor DarkGray
 }
 if ($Interactive) { Show-Logo }
 Say "Atlas-AttackLab $Version · instalador`n"
@@ -293,7 +291,8 @@ $Gpu = 'no'
 if ((Invoke-Docker info --format '{{json .Runtimes}}').Out -match 'nvidia') {
   $Gpu = 'yes'; Ok 'GPU NVIDIA disponible para Docker: el modelo la usará'
 } elseif (Get-Command nvidia-smi -ErrorAction SilentlyContinue) {
-  Warn 'Hay una GPU NVIDIA pero Docker no puede usarla: irá en CPU. Actualiza el driver de NVIDIA y Docker Desktop.'
+  if (Test-WslBackend) { Warn 'Hay una GPU NVIDIA pero Docker no puede usarla: irá en CPU. Actualiza el driver de NVIDIA y Docker Desktop.' }
+  else { Warn 'Hay una GPU NVIDIA, pero Docker Desktop usa Hyper-V y así no puede usarla: irá en CPU. Para usarla, activa Docker Desktop > Settings > General > Use the WSL 2 based engine.' }
 }
 
 # ---------------------------------------------------------------- puerto

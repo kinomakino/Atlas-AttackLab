@@ -144,21 +144,23 @@ if [ "$ASSUME_YES" = 0 ] && { [ -t 0 ] || [ "${ATTACKLAB_FORCE_INTERACTIVE:-}" =
 
 logo() {  # el logotipo de seguridad/si: corchetes en blanco, la figura en gris
   local w g
-  if [ -t 1 ]; then w=$'\033[1;37m'; g=$'\033[90m'; else w=; g=; fi
-  printf '%s __%s                     %s__%s\n' "$w" "$N" "$w" "$N"
-  while IFS= read -r l; do printf '%s|%s%s%s|%s\n' "$w" "$g" "$l" "$w" "$N"; done <<'LOGO'
-          _____          
-        _|     |_        
-       |_________|       
-         / ___ \         
-        | (   ) |        
-         \ | | /         
-          \|_|/          
-           \_/           
-LOGO
-  printf '%s|__                     __|%s\n' "$w" "$N"
-  printf '%s  s e g u r i d a d / s i%s\n' "$w" "$N"
-  printf '%sc i b e r s e g u r i d a d%s\n\n' "$g" "$N"
+  if [ -t 1 ]; then w=$'\033[1;37m'; g=$'\033[38;5;245m'; else w=; g=; fi
+  printf '%s%s%s\n' "$w" '███████                    ███████' "$N"
+  printf '%s%s%s%s%s%s%s\n' "$w" '██' "$g" '            ▄▄  ▄▄            ' "$w" '██' "$N"
+  printf '%s%s%s%s%s%s%s\n' "$w" '██' "$g" '          ▄████████▄          ' "$w" '██' "$N"
+  printf '%s%s%s%s%s%s%s\n' "$w" '██' "$g" '          ██████████          ' "$w" '██' "$N"
+  printf '%s%s%s%s%s%s%s\n' "$w" '██' "$g" '          ▄▄▄▄▄▄▄▄▄▄          ' "$w" '██' "$N"
+  printf '%s%s%s%s%s%s%s\n' "$w" '██' "$g" '    ▀▀██████████████████▀▀    ' "$w" '██' "$N"
+  printf '%s%s%s%s%s%s%s\n' "$w" '██' "$g" '      ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄      ' "$w" '██' "$N"
+  printf '%s%s%s%s%s%s%s\n' "$w" '██' "$g" '      ███████▀▀▀▀███████      ' "$w" '██' "$N"
+  printf '%s%s%s%s%s%s%s\n' "$w" '██' "$g" '       ▀█████    █████▀       ' "$w" '██' "$N"
+  printf '%s%s%s%s%s%s%s\n' "$w" '██' "$g" '         ▀████  ████▀         ' "$w" '██' "$N"
+  printf '%s%s%s%s%s%s%s\n' "$w" '██' "$g" '           ██▄▄▄▄██           ' "$w" '██' "$N"
+  printf '%s%s%s%s%s%s%s\n' "$w" '██' "$g" '            ▀████▀            ' "$w" '██' "$N"
+  printf '%s%s%s%s%s%s%s\n' "$w" '██' "$g" '              ▀▀              ' "$w" '██' "$N"
+  printf '%s%s%s\n' "$w" '███████                    ███████' "$N"
+  printf '%s     s e g u r i d a d / s i%s\n' "$w" "$N"
+  printf '%s   c i b e r s e g u r i d a d%s\n\n' "$g" "$N"
 }
 [ "$INTERACTIVE" = 1 ] && logo
 say "${B}Atlas-AttackLab ${VERSION}${N} · instalador"
