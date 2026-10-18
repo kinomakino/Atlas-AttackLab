@@ -1,4 +1,4 @@
-# Pruebas del instalador de Windows con un `docker` simulado. No toca Docker ni instala nada.
+﻿# Pruebas del instalador de Windows con un `docker` simulado. No toca Docker ni instala nada.
 # Se ejecutan con Windows PowerShell 5.1 (`powershell`), la versión que trae cualquier Windows.
 $ErrorActionPreference = 'Stop'
 $installer = Join-Path $PSScriptRoot '..\..\deploy\install.ps1'
@@ -15,19 +15,38 @@ if ($a -like 'info --format*') {
   "{0} {1} {2} {3}" -f $(if ($env:FAKE_OSTYPE) { $env:FAKE_OSTYPE } else { 'linux' }), $(if ($env:FAKE_NCPU) { $env:FAKE_NCPU } else { 8 }), $(if ($env:FAKE_MEM) { $env:FAKE_MEM } else { 8589934592 }), 'x86_64'
   exit 0
 }
-if ($a -eq 'info') { if ($env:FAKE_INFO_ERR) { [Console]::Error.WriteLine($env:FAKE_INFO_ERR); exit 1 }; exit 0 }
+if ($a -eq 'info') {
+  if ($env:FAKE_INFO_ERR) { [Console]::Error.WriteLine($env:FAKE_INFO_ERR); exit 1 }
+  # Parado la primera vez; el alumno lo arranca y vuelve a comprobar.
+  $once = Join-Path $env:FAKE_STATE 'info'
+  if ($env:FAKE_INFO_ERR_ONCE -and -not (Test-Path $once)) { New-Item $once | Out-Null; [Console]::Error.WriteLine($env:FAKE_INFO_ERR_ONCE); exit 1 }
+  exit 0
+}
+if ($a -like 'manifest inspect*') {
+  if ($env:FAKE_PRIVATE -and -not (Test-Path (Join-Path $env:FAKE_STATE 'login'))) { [Console]::Error.WriteLine('unauthorized: authentication required'); exit 1 }
+  exit 0
+}
+if ($a -like 'login *') {
+  if ((@($input) -join '').Trim() -eq $env:FAKE_TOKEN) { New-Item (Join-Path $env:FAKE_STATE 'login') | Out-Null; 'Login Succeeded'; exit 0 }
+  [Console]::Error.WriteLine('Error response from daemon: unauthorized'); exit 1
+}
 if ($a -eq 'compose version') { exit $(if ($env:FAKE_COMPOSE_RC) { [int]$env:FAKE_COMPOSE_RC } else { 0 }) }
 exit 0
 '@ | Set-Content -Encoding UTF8 $fake
 
-function Run($name, [int]$wantCode, $wantText, [hashtable]$vars = @{}, [string[]]$extra = @()) {
+# Run: sin preguntas (-Yes -Check). RunI: como si hubiera terminal, con lo que teclea el alumno en $typed.
+function Run($name, [int]$wantCode, $wantText, [hashtable]$vars = @{}, [string[]]$extra = @(), $typed = $null) {
   $saved = @{}
+  if (-not $vars.ContainsKey('ATTACKLAB_DOCKER_APP')) { $vars['ATTACKLAB_DOCKER_APP'] = 'C:\no\existe\Docker Desktop.exe' }
+  $vars['FAKE_STATE'] = Join-Path $work ('state-' + [guid]::NewGuid())
+  New-Item -ItemType Directory $vars['FAKE_STATE'] | Out-Null
   $vars['ATTACKLAB_DOCKER'] = $(if ($vars.ContainsKey('ATTACKLAB_DOCKER')) { $vars['ATTACKLAB_DOCKER'] } else { $fake })
   $vars['ATTACKLAB_DIR'] = Join-Path $work 'lab'
   foreach ($k in $vars.Keys) { $saved[$k] = [Environment]::GetEnvironmentVariable($k); [Environment]::SetEnvironmentVariable($k, [string]$vars[$k]) }
   # stderr del instalador no debe convertirse en excepción aquí (PowerShell 5.1)
   $ErrorActionPreference = 'Continue'
-  $out = & powershell -NoProfile -ExecutionPolicy Bypass -File $installer -Check @extra 2>&1 | Out-String
+  if ($null -eq $typed) { $out = & powershell -NoProfile -ExecutionPolicy Bypass -File $installer -Check -Yes @extra 2>&1 | Out-String }
+  else { $out = $typed | & powershell -NoProfile -ExecutionPolicy Bypass -File $installer -NoOpen @extra 2>&1 | Out-String }
   $code = $LASTEXITCODE
   $ErrorActionPreference = 'Stop'
   foreach ($k in $saved.Keys) { [Environment]::SetEnvironmentVariable($k, $saved[$k]) }
@@ -54,6 +73,26 @@ try {
   Run 'puerto 8080 ocupado: usa el siguiente' 0 'port=8081'
 } catch { Run 'puerto 8080 ocupado: usa otro' 0 'ocupado' }
 finally { $listener.Stop() }
+
+# Acceso al registro sin terminal: avisa y sigue
+Run 'sin terminal y sin acceso al registro: avisa' 0 'no te deja' @{ FAKE_PRIVATE = 1 }
+
+# Con terminal: menú y ayudas
+function RunI($name, [int]$wantCode, $wantText, [string[]]$typed, [hashtable]$vars = @{}, [string[]]$extra = @()) {
+  $vars['ATTACKLAB_FORCE_INTERACTIVE'] = 1
+  $vars['ATTACKLAB_DOCKER_APP'] = 'C:\no\existe\Docker Desktop.exe'
+  Run $name $wantCode $wantText $vars $extra $typed
+}
+RunI 'menu: salir' 0 'quieres hacer' @('4')
+RunI 'menu: opcion no valida y salir' 0 'lida' @('9', '4')
+RunI 'menu: comprobar sin instalar' 0 'threads=5' @('2', 'n')
+RunI 'menu: desinstalar sin nada instalado' 0 'instalado en este equipo' @('3')
+RunI 'Docker no instalado: enlace de descarga directa' 11 'desktop.docker.com/win/main/' @('n', 'q') @{ ATTACKLAB_DOCKER = 'C:\no\existe\docker.exe' } @('-Check')
+RunI 'Docker parado: lo arranca y vuelve a comprobar' 0 'threads=5' @('') @{ FAKE_INFO_ERR_ONCE = 'error during connect' } @('-Check')
+RunI 'Docker parado y el alumno sale' 13 'no responde' @('q') @{ FAKE_INFO_ERR = 'error during connect' } @('-Check')
+RunI 'poca memoria: explica donde subirla' 20 'wslconfig' @('q') @{ FAKE_MEM = 3 * $GiB } @('-Check')
+RunI 'sin acceso: inicia sesion con el token' 0 'ghcr.io como alumno' @('n', 'alumno', 'ghp_bueno') @{ FAKE_PRIVATE = 1; FAKE_TOKEN = 'ghp_bueno' } @('-Check')
+RunI 'token rechazado y el alumno sale' 36 'no ha aceptado' @('n', 'alumno', 'malo', 'q') @{ FAKE_PRIVATE = 1; FAKE_TOKEN = 'ghp_bueno' } @('-Check')
 
 Remove-Item -Recurse -Force $work
 "`n$pass correctas, $fail fallidas"

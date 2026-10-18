@@ -32,64 +32,38 @@
 <div class="eyebrow def">Lab local · todo en tu equipo</div>
 <h1 style="font-size: clamp(36px, 5vw, 52px)">Todos los retos, en tu equipo</h1>
 <p>Agentes con herramientas, MCP, RAG y cadena de suministro. Todo corre en Docker, con el modelo incluido. No hay que instalar nada más.</p>
-<div class="note warn">
-<span><strong>Versión 0.1.0 de pruebas, privada.</strong> Para descargar las imágenes hace falta que te hayamos dado acceso con tu cuenta de GitHub y que inicies sesión en el registro antes de instalar. Mira el <a href="#acceso">paso 2</a>.</span>
+<div class="note">
+<span><strong>Versión 0.1.0 de pruebas, abierta.</strong> No hace falta cuenta ni registro: descargas el instalador, lo ejecutas y él te guía.</span>
 </div>
 </div>
 
 <div class="card" style="padding: 24px; display: flex; flex-direction: column; gap: 20px">
 <div>
-<p class="muted" style="margin: 0 0 8px; font-size: 15px"><strong style="color: var(--text)">1.</strong> Instala Docker (Docker Desktop en macOS y Windows) y arráncalo.</p>
-</div>
-<div>
-<p class="muted" style="margin: 0 0 8px; font-size: 15px"><strong style="color: var(--text)">2.</strong> Con Docker arrancado y mientras la versión sea privada, inicia sesión en el registro de imágenes (<a href="#acceso">cómo</a>).</p>
-</div>
-<div>
-<p class="muted" style="margin: 0 0 8px; font-size: 15px"><strong style="color: var(--text)">3.</strong> macOS y Linux, en una terminal:</p>
+<p class="muted" style="margin: 0 0 8px; font-size: 15px"><strong style="color: var(--text)">1.</strong> macOS y Linux, en una terminal:</p>
 <pre class="code"><span style="color: var(--faint)">$</span> curl -fsSLO https://witty-rock-0c004b703.6.azurestaticapps.net/install.sh
 <span style="color: var(--faint)">$</span> less install.sh        <span style="color: var(--faint)"># léelo antes de ejecutarlo</span>
 <span style="color: var(--faint)">$</span> bash install.sh</pre>
 </div>
 <div>
-<p class="muted" style="margin: 0 0 8px; font-size: 15px"><strong style="color: var(--text)">3.</strong> Windows, en PowerShell:</p>
+<p class="muted" style="margin: 0 0 8px; font-size: 15px"><strong style="color: var(--text)">1.</strong> Windows, en PowerShell:</p>
 <pre class="code">&gt; Invoke-WebRequest https://witty-rock-0c004b703.6.azurestaticapps.net/install.ps1 -OutFile install.ps1
 &gt; notepad install.ps1      <span style="color: var(--faint)"># léelo antes de ejecutarlo</span>
 &gt; powershell -ExecutionPolicy Bypass -File install.ps1</pre>
 </div>
 <div>
-<p class="muted" style="margin: 0; font-size: 15px"><strong style="color: var(--text)">4.</strong> El instalador revisa tu equipo, se configura solo y abre el lab. Después tienes el comando <span class="mono" style="color: var(--defense)">atlas-lab</span> (start, stop, status, update, uninstall…).</p>
+<p class="muted" style="margin: 0; font-size: 15px"><strong style="color: var(--text)">2.</strong> El instalador te enseña un menú: elige <strong style="color: var(--text)">Instalar</strong>. Revisa tu equipo y te acompaña si falta algo: si no tienes Docker Desktop te da el enlace de descarga para tu equipo, te lo abre y espera a que lo instales; si está parado, lo arranca. Al terminar abre el lab y deja el comando <span class="mono" style="color: var(--defense)">atlas-lab</span> (start, stop, status, update, uninstall…).</p>
 </div>
 <div>
-<p class="muted" style="margin: 0; font-size: 15px"><strong style="color: var(--text)">5.</strong> La primera vez, el lab te pide descargar el modelo (unos 2 GB): pulsa el botón del aviso y espera a que termine. Solo se hace una vez. Luego sigue la <a href="/guia.html">guía para jugar</a>.</p>
+<p class="muted" style="margin: 0; font-size: 15px"><strong style="color: var(--text)">3.</strong> La primera vez, el lab te pide descargar el modelo (unos 2 GB): pulsa el botón del aviso y espera a que termine. Solo se hace una vez. Luego sigue la <a href="/guia.html">guía para jugar</a>.</p>
 </div>
 <details>
 <summary style="cursor: pointer; font-weight: 600; font-size: 15px">Comprobar que el instalador es el oficial (SHA-256)</summary>
-<pre class="code" style="margin-top: 10px">a0ab47765600c2fc28b1f804cbaaf13f96904fb62e8dc7a6e50c764900268d2a  install.sh
-c5a40cbb2c8a7b38c81ef96ca85f03dba5b7996621f4fcbf45f4bc0116403235  install.ps1</pre>
+<pre class="code" style="margin-top: 10px">3c77dc1c71bfafd919c6e2ca4701109ded5f095a629e0b7e096f4a29fbc4969c  install.sh
+9cf8d2c6989e9d907a267e0b9daf3430ed96bbf72f2031f8daa4e85e1ad700eb  install.ps1</pre>
 <p class="muted" style="font-size: 14px; margin: 8px 0 0">También en <a href="/install.sha256">install.sha256</a>. Con <span class="mono">cosign</span> instalado, el instalador verifica además la firma de la imagen.</p>
 </details>
 </div>
 </div>
-
-<section style="padding-top: 0" id="acceso">
-<div class="wrap">
-<h2 class="section-title">Paso 2: acceso a la versión privada</h2>
-<div class="grid">
-<div class="card">
-<div class="step-n">01</div>
-<h3>Crea un token de GitHub</h3>
-<p>Con la cuenta de GitHub a la que te hemos dado acceso, entra en <a href="https://github.com/settings/tokens/new?scopes=read:packages&amp;description=atlas-attacklab">Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token (classic)</a>. Marca solo <span class="mono">read:packages</span>, pon una caducidad y genera el token. Cópialo: GitHub no vuelve a enseñarlo.</p>
-</div>
-<div class="card">
-<div class="step-n">02</div>
-<h3>Inicia sesión en el registro</h3>
-<p>En una terminal (o PowerShell en Windows), con Docker arrancado:</p>
-<pre class="code" style="margin-top: 12px">docker login ghcr.io -u <span style="color: var(--defense)">tu-usuario-de-github</span></pre>
-<p style="margin-top: 12px">Cuando pida <em>Password</em>, pega el token (no tu contraseña de GitHub). Debe responder <span class="mono">Login Succeeded</span>. Si el instalador dice que el registro pide iniciar sesión, es este paso.</p>
-</div>
-</div>
-</div>
-</section>
 
 <section style="padding-top: 0" id="desinstalar">
 <div class="wrap">
@@ -97,7 +71,7 @@ c5a40cbb2c8a7b38c81ef96ca85f03dba5b7996621f4fcbf45f4bc0116403235  install.ps1</p
 <div class="card">
 <pre class="code">atlas-lab uninstall</pre>
 <p style="margin-top: 12px">Pide confirmación y borra los contenedores, las imágenes, los volúmenes (tu progreso y los modelos descargados), la carpeta del lab (<span class="mono">~/.atlas-lab</span>, o <span class="mono">%LOCALAPPDATA%\atlas-lab</span> en Windows) y el propio comando. No queda nada del lab en tu equipo.</p>
-<p style="margin-top: 12px">Si hiciste el paso 2, cierra también la sesión del registro con <span class="mono">docker logout ghcr.io</span> y borra el token en GitHub. Docker no se toca: si ya no lo usas, desinstálalo como cualquier otra aplicación.</p>
+<p style="margin-top: 12px">También puedes volver a ejecutar el instalador y elegir <strong>Desinstalar</strong> en el menú. Docker no se toca: si ya no lo usas, desinstálalo como cualquier otra aplicación.</p>
 </div>
 </div>
 </section>

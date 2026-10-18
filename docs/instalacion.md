@@ -2,13 +2,15 @@
 
 El lab se instala en equipos de usuario muy distintos. El instalador tiene que **detectar, decidir y explicar**: nunca dejar una instalación a medias ni un error críptico.
 
+Con terminal enseña un menú (instalar o actualizar, comprobar el equipo, desinstalar, salir) y **acompaña**: ante un problema que el alumno puede arreglar, explica, ofrece abrir el enlace o lo arregla él, y espera a que el alumno pulse Enter para volver a comprobar. Sin terminal, o con `--yes` / `-Yes` (CI, `atlas-lab update`), no pregunta nada y se para con el mensaje y un código de salida propio.
+
 ## Qué descarga el cliente
 
 | Pieza | De dónde | Qué es |
 |---|---|---|
 | `install.sh` / `install.ps1` | Web pública, con su SHA-256 publicado | El instalador. Se puede leer antes de ejecutarlo |
 | `compose.yaml` | Lo genera el instalador | Versión fija de cada imagen |
-| Imágenes | GHCR (`ghcr.io/kinomakino/atlas-attacklab`), firmadas con cosign | `lab` (motor, web y retos), multiplataforma amd64/arm64 |
+| Imágenes | GHCR (`ghcr.io/kinomakino/atlas-attacklab`, público), firmadas con cosign | `lab` (motor, web y retos), multiplataforma amd64/arm64 |
 | `ollama/ollama` | Docker Hub, versión fija | El servidor del modelo |
 | Modelo | Registro de Ollama | Lo baja la web del lab cuando un reto lo pide |
 
@@ -23,8 +25,10 @@ Todo se instala en una carpeta del usuario (`~/.atlas-lab`, o `%LOCALAPPDATA%\at
 | macOS Apple Silicon o Intel | Requiere Docker Desktop (u OrbStack/Colima con `docker` en el PATH) |
 | Windows 10/11 | Requiere Docker Desktop con WSL 2 y contenedores Linux |
 | Linux | Docker Engine o Desktop con Compose v2 |
-| Docker no instalado | Se para y enlaza la guía de instalación de su sistema |
-| Docker instalado pero parado | Se para: "Arranca Docker Desktop y vuelve a ejecutar el instalador" |
+| Docker no instalado | Da el enlace de descarga directa de Docker Desktop para su sistema y chip (en Linux, la guía de Docker Engine), ofrece abrirlo y espera a que lo instale |
+| Docker instalado pero parado | En macOS y Windows ofrece arrancar Docker Desktop y espera hasta 3 minutos a que responda. En Linux explica cómo arrancar el servicio |
+| Docker Desktop recién instalado, sin `docker` en el PATH de esa terminal | Lo busca en las rutas de Docker Desktop y lo usa |
+| El registro pide iniciar sesión | Abre GitHub para crear un token `read:packages`, pide usuario y token y hace el `docker login` (las imágenes son públicas: no debería pasar) |
 | Sin permiso para usar Docker (Linux, usuario fuera del grupo `docker`) | Se para y explica cómo añadirse al grupo |
 | Compose v1 (`docker-compose`) o sin Compose | Se para y explica cómo actualizar |
 | Windows con contenedores Windows | Se para: hay que cambiar a contenedores Linux |

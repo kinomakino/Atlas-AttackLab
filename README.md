@@ -6,15 +6,9 @@ Estado: en construcción. Decisiones en [docs/decisiones.md](docs/decisiones.md)
 
 ## Instalar el lab
 
-Para alumnos. Necesitas Docker (Docker Desktop en macOS y Windows) arrancado.
+Para alumnos. No hace falta cuenta ni registro.
 
-1. **Mientras la versión sea privada**, crea un token de GitHub (classic) con permiso `read:packages` desde la cuenta a la que te hemos dado acceso e inicia sesión en el registro. Cuando pida la contraseña, pega el token:
-
-   ```bash
-   docker login ghcr.io -u tu-usuario-de-github
-   ```
-
-2. Descarga el instalador de la [página de descarga](https://witty-rock-0c004b703.6.azurestaticapps.net/descargar.html), léelo y ejecútalo. En macOS y Linux:
+1. Descarga el instalador de la [página de descarga](https://witty-rock-0c004b703.6.azurestaticapps.net/descargar.html), léelo y ejecútalo. En macOS y Linux:
 
    ```bash
    curl -fsSLO https://witty-rock-0c004b703.6.azurestaticapps.net/install.sh
@@ -28,7 +22,8 @@ Para alumnos. Necesitas Docker (Docker Desktop en macOS y Windows) arrancado.
    powershell -ExecutionPolicy Bypass -File install.ps1
    ```
 
-3. El instalador abre http://127.0.0.1:8080. La primera vez, pulsa el botón para descargar el modelo (unos 2 GB).
+2. Elige **Instalar** en el menú. El instalador revisa tu equipo y te guía: si falta Docker Desktop te da el enlace de descarga y espera a que lo instales, y si está parado lo arranca.
+3. Al terminar abre http://127.0.0.1:8080. La primera vez, pulsa el botón para descargar el modelo (unos 2 GB).
 
 Después tienes el comando `atlas-lab` (`start`, `stop`, `status`, `open`, `update`, `logs`, `doctor`, `uninstall`). `atlas-lab uninstall` lo borra todo: contenedores, imágenes, progreso, modelos, carpeta y comando. Cómo se juega, paso a paso, en la [guía](https://witty-rock-0c004b703.6.azurestaticapps.net/guia.html). Detalles del instalador en [docs/instalacion.md](docs/instalacion.md).
 

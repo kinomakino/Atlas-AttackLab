@@ -1,8 +1,12 @@
-# Instalador de Atlas-AttackLab para Windows (PowerShell 5.1 o superior).
+﻿# Instalador de Atlas-AttackLab para Windows (PowerShell 5.1 o superior).
 #
 #   Invoke-WebRequest https://<web>/install.ps1 -OutFile install.ps1
 #   notepad install.ps1        # léelo antes de ejecutarlo
 #   powershell -ExecutionPolicy Bypass -File install.ps1
+#
+# Con terminal enseña un menú y acompaña: si falta Docker Desktop da el enlace y espera,
+# si está parado lo arranca, y si el registro pide acceso guía el inicio de sesión
+# en el registro. Con -Yes (o sin terminal) no pregunta nada y se para con un mensaje claro.
 #
 # Comprueba Docker Desktop y los recursos que Docker tiene en este equipo, decide la
 # configuración, descarga el compose verificado, arranca y deja el comando `atlas-lab`.
@@ -28,6 +32,12 @@ $MinDiskGiB = $(if ($env:ATTACKLAB_MIN_DISK_GIB) { [int]$env:ATTACKLAB_MIN_DISK_
 $PortFirst = 8080; $PortLast = 8099
 $Docker = $(if ($env:ATTACKLAB_DOCKER) { $env:ATTACKLAB_DOCKER } else { 'docker' })              # las pruebas inyectan uno simulado
 $DockerHelp = 'https://docs.docker.com/desktop/setup/install/windows-install/'
+$DockerDownload = $(if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'https://desktop.docker.com/win/main/arm64/Docker%20Desktop%20Installer.exe' } else { 'https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe' })
+$DockerDesktopExe = $(if ($env:ATTACKLAB_DOCKER_APP) { $env:ATTACKLAB_DOCKER_APP } else { Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe' })
+$Image = $(if ($env:ATTACKLAB_IMAGE) { $env:ATTACKLAB_IMAGE } else { 'ghcr.io/kinomakino/atlas-attacklab' })
+$TokenUrl = 'https://github.com/settings/tokens/new?scopes=read:packages&description=atlas-attacklab'
+# Con terminal se pregunta y se ayuda; las pruebas lo fuerzan con ATTACKLAB_FORCE_INTERACTIVE.
+$Interactive = (-not $Yes) -and (($env:ATTACKLAB_FORCE_INTERACTIVE -eq '1') -or ([Environment]::UserInteractive -and -not [Console]::IsInputRedirected))
 
 function Say($m) { Write-Host $m }
 function Ok($m) { Write-Host "OK  $m" -ForegroundColor Green }
@@ -42,39 +52,151 @@ function Invoke-Docker { param([Parameter(ValueFromRemainingArguments)]$a)
   # comando externo se convierte en excepción. Aquí queremos el código de salida, no eso.
   $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
   try {
-    $out = & $Docker @a 2>&1
+    $out = & $script:Docker @a 2>&1
     return @{ Code = $LASTEXITCODE; Out = ($out | Out-String).Trim() }
   } finally { $ErrorActionPreference = $prev }
 }
+function Read-Line($prompt) {
+  # Con la entrada redirigida (pruebas) se lee de stdin; si no, de la consola.
+  Write-Host -NoNewline $prompt
+  if ([Console]::IsInputRedirected) { $l = [Console]::In.ReadLine(); Write-Host ''; return $l }
+  return (Read-Host)
+}
+function Read-Secret($prompt) {
+  Write-Host -NoNewline $prompt
+  if ([Console]::IsInputRedirected) { $l = [Console]::In.ReadLine(); Write-Host ''; return $l }
+  $sec = Read-Host -AsSecureString
+  return [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec))
+}
+function Ask-Yes($q, [switch]$DefaultYes) {
+  if ($Yes) { return $true }
+  if (-not $Interactive) { return $false }
+  $a = Read-Line ($q + $(if ($DefaultYes) { ' [S/n] ' } else { ' [s/N] ' }))
+  if ($null -eq $a) { return $false }
+  if ($a -eq '' -and $DefaultYes) { return $true }
+  return ($a -match '^(s|si|sí|y)$')
+}
+function Open-Url($u) { if (-not $NoOpen) { try { Start-Process $u } catch { } } }
+
+# Un problema que se puede arreglar: sin terminal se para; con terminal explica,
+# ofrece el enlace o el arreglo y deja volver a comprobar.
+$script:Prob = $null
+function Set-Problem([int]$code, $msg, $hint, $url = '', $fix = '') {
+  $script:Prob = @{ Code = $code; Msg = $msg; Hint = $hint; Url = $url; Fix = $fix }
+  return $false
+}
+function Resolve-Problem {
+  $p = $script:Prob
+  if (-not $Interactive) { Die $p.Msg $p.Hint $p.Code }
+  Write-Host "`nX  $($p.Msg)" -ForegroundColor Red
+  Write-Host "   $($p.Hint)"
+  if ($p.Url) {
+    Write-Host "   Enlace: $($p.Url)" -ForegroundColor Cyan
+    if (Ask-Yes '   ¿Lo abro en tu navegador?' -DefaultYes) { Open-Url $p.Url }
+  }
+  if ($p.Fix -and (& $p.Fix)) { return }
+  $a = Read-Line '   Cuando lo tengas, pulsa Enter para volver a comprobar (o escribe q para salir): '
+  if ($null -eq $a -or $a -match '^[qQ]$') { Die $p.Msg $p.Hint $p.Code }
+  Say ''
+}
+function Find-Docker {
+  # Recién instalado, el comando aún no está en el PATH de esta ventana.
+  if (Get-Command $script:Docker -ErrorAction SilentlyContinue) { return }
+  if ($script:Docker -ne 'docker') { return }
+  $c = Join-Path $env:ProgramFiles 'Docker\Docker\resources\bin\docker.exe'
+  if (Test-Path $c) { $script:Docker = $c; $env:Path = (Split-Path $c) + ';' + $env:Path }
+}
+function Wait-Docker {
+  Write-Host -NoNewline '   Esperando a Docker'
+  for ($i = 0; $i -lt 60; $i++) {
+    if ((Invoke-Docker info).Code -eq 0) { Write-Host ''; Ok 'Docker ya responde'; return $true }
+    Write-Host -NoNewline '.'; Start-Sleep 3
+  }
+  Write-Host ''; Warn 'Docker todavía no responde.'; return $false
+}
+function Start-DockerDesktop {
+  if (-not (Test-Path $DockerDesktopExe)) { return $false }
+  if (-not (Ask-Yes '   ¿Arranco Docker Desktop?' -DefaultYes)) { return $false }
+  try { Start-Process $DockerDesktopExe } catch { Warn 'No he podido abrirlo. Ábrelo tú desde el menú Inicio.'; return $false }
+  Say '   La primera vez, Docker Desktop pide aceptar sus condiciones: hazlo en su ventana.'
+  Find-Docker
+  return (Wait-Docker)
+}
+function Connect-Registry {
+  $hostName = ($Image -split '/')[0]
+  Say '   En GitHub deja marcado solo read:packages, pulsa Generate token y copia el token.'
+  Say "   Docker lo guardará en tu equipo, igual que con 'docker login'. Deja el usuario vacío para no hacerlo ahora."
+  $user = Read-Line '   Tu usuario de GitHub: '
+  if (-not $user) { return $false }
+  $tok = Read-Secret '   Token (al pegarlo no se ve nada, es normal): '
+  if (-not $tok) { return $false }
+  $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  try { $tok | & $script:Docker login $hostName -u $user --password-stdin 2>&1 | Out-Null; $code = $LASTEXITCODE }
+  finally { $ErrorActionPreference = $prev }
+  if ($code -eq 0) { Ok "Sesión iniciada en $hostName como $user"; return $true }
+  Warn 'GitHub no ha aceptado ese usuario o ese token.'; return $false
+}
+
 function Test-PortInUse([int]$p) {
   $c = New-Object System.Net.Sockets.TcpClient
   try { $c.Connect('127.0.0.1', $p); return $true } catch { return $false } finally { $c.Close() }
 }
 
 Say "Atlas-AttackLab $Version · instalador`n"
+
+$FromMenu = $false
+if ($Interactive -and -not $Check) {
+  while ($true) {
+    Say '¿Qué quieres hacer?'
+    Say '  1) Instalar el lab (o actualizarlo, sin perder tu progreso)'
+    Say '  2) Comprobar mi equipo, sin instalar nada'
+    Say '  3) Desinstalar el lab'
+    Say '  4) Salir'
+    $opt = Read-Line 'Elige una opción [1]: '
+    if ($null -eq $opt) { $opt = '4' }
+    if ($opt -eq '' -or $opt -eq '1') { break }
+    if ($opt -eq '2') { $Check = $true; $FromMenu = $true; break }
+    if ($opt -eq '3') {
+      $cmd = Join-Path $Dir 'bin\atlas-lab.ps1'
+      if (Test-Path $cmd) { & powershell -NoProfile -ExecutionPolicy Bypass -File $cmd uninstall; exit 0 }
+      Say 'El lab no está instalado en este equipo.'; exit 0
+    }
+    if ($opt -match '^(4|q|Q)$') { exit 0 }
+    Say "Opción no válida.`n"
+  }
+  Say ''
+}
 Ok "Sistema: Windows ($env:PROCESSOR_ARCHITECTURE)"
 
 # ---------------------------------------------------------------- Docker
-if (-not (Get-Command $Docker -ErrorAction SilentlyContinue)) {
-  Die 'Docker no está instalado.' "Instala Docker Desktop (con WSL 2) y vuelve a ejecutar el instalador: $DockerHelp" 11
-}
-$info = Invoke-Docker info
-if ($info.Code -ne 0) {
-  Die 'Docker está instalado pero no responde.' 'Abre Docker Desktop, espera a que esté en marcha y vuelve a ejecutar el instalador.' 13
-}
-if ((Invoke-Docker compose version).Code -ne 0) { Die 'Falta Docker Compose v2.' "Actualiza Docker Desktop: $DockerHelp" 14 }
+function Test-Docker {
+  Find-Docker
+  if (-not (Get-Command $script:Docker -ErrorAction SilentlyContinue)) {
+    if (Test-Path $DockerDesktopExe) {
+      return (Set-Problem 13 'Docker Desktop está instalado pero no está arrancado.' 'Ábrelo desde el menú Inicio y espera a que diga que está en marcha.' '' 'Start-DockerDesktop')
+    }
+    return (Set-Problem 11 'Docker Desktop no está instalado.' "Descárgalo, ejecuta el instalador (deja marcada la opción de WSL 2), reinicia si te lo pide y arráncalo. Guía: $DockerHelp" $DockerDownload)
+  }
+  if ((Invoke-Docker info).Code -ne 0) {
+    return (Set-Problem 13 'Docker está instalado pero no responde.' 'Abre Docker Desktop y espera a que esté en marcha.' '' 'Start-DockerDesktop')
+  }
+  if ((Invoke-Docker compose version).Code -ne 0) { return (Set-Problem 14 'Falta Docker Compose v2.' 'Actualiza Docker Desktop a la última versión.' $DockerHelp) }
 
-$parts = (Invoke-Docker info --format '{{.OSType}} {{.NCPU}} {{.MemTotal}} {{.Architecture}}').Out -split '\s+'
-$OsType = $parts[0]; $NCpu = [int]$parts[1]; $Mem = [int64]$parts[2]; $Arch = $parts[3]
-if ($OsType -ne 'linux') { Die "Docker está usando contenedores $OsType." 'En Docker Desktop: clic derecho en el icono > Switch to Linux containers.' 15 }
+  $parts = (Invoke-Docker info --format '{{.OSType}} {{.NCPU}} {{.MemTotal}} {{.Architecture}}').Out -split '\s+'
+  $script:OsType = $parts[0]; $script:NCpu = [int]$parts[1]; $script:Mem = [int64]$parts[2]; $script:Arch = $parts[3]
+  if ($script:OsType -ne 'linux') { return (Set-Problem 15 "Docker está usando contenedores $($script:OsType)." 'En Docker Desktop: clic derecho en el icono > Switch to Linux containers.') }
+
+  $script:MemGiB = [int][math]::Floor($script:Mem / 1GB)
+  if ($script:MemGiB -lt $MinMemGiB) {
+    return (Set-Problem 20 "Docker solo tiene $($script:MemGiB) GiB de memoria y el modelo necesita al menos $MinMemGiB." 'Con WSL 2, súbela en %USERPROFILE%\.wslconfig ([wsl2] memory=8GB) y reinicia Docker Desktop.')
+  }
+  return $true
+}
+while (-not (Test-Docker)) { Resolve-Problem }
 Ok "Docker responde (Compose v2, arquitectura $Arch)"
 
 # ---------------------------------------------------------------- recursos de Docker
-$MemGiB = [int][math]::Floor($Mem / 1GB)
-if ($MemGiB -lt $MinMemGiB) {
-  Die "Docker solo tiene $MemGiB GiB de memoria y el modelo necesita al menos $MinMemGiB." `
-      'Con WSL 2, súbela en %USERPROFILE%\.wslconfig ([wsl2] memory=8GB) y reinicia Docker Desktop.' 20
-} elseif ($MemGiB -lt $WarnMemGiB) {
+if ($MemGiB -lt $WarnMemGiB) {
   Warn "Docker tiene $MemGiB GiB de memoria: funcionará justo. Mejor cierra otras aplicaciones pesadas."
 } else { Ok "Memoria para Docker: $MemGiB GiB" }
 
@@ -111,9 +233,22 @@ if ($Port -eq 0) {
 if ($Port -ne $PortFirst) { Warn "El puerto $PortFirst está ocupado: se usará el $Port" }
 Ok "Dirección: http://127.0.0.1:$Port"
 
+# ---------------------------------------------------------------- acceso a las imágenes
+# Las imágenes son públicas; si el registro pidiera iniciar sesión, se guía. Se comprueba antes de
+# descargar nada; cualquier otro fallo (sin red, proxy) lo explicará la descarga.
+function Test-Registry {
+  $r = Invoke-Docker manifest inspect "${Image}:$Version"
+  if ($r.Code -eq 0 -or $r.Out -notmatch 'denied|unauthorized|authentication') { return $true }
+  return (Set-Problem 36 'El registro de imágenes no te deja descargar el lab.' "Pide iniciar sesión en $(($Image -split '/')[0]) con tu usuario de GitHub y un token con permiso read:packages." $TokenUrl 'Connect-Registry')
+}
+while (-not (Test-Registry)) {
+  if (-not $Interactive -and $Check) { Warn $script:Prob.Msg; break }
+  Resolve-Problem
+}
+
 if ($Check) {
   Say "`nPLAN os=Windows arch=$Arch ncpu=$NCpu threads=$Threads mem_gib=$MemGiB disk_gib=$DiskGiB gpu=$Gpu native=no port=$Port"
-  exit 0
+  if (-not ($FromMenu -and (Ask-Yes 'Tu equipo está listo para el lab. ¿Lo instalo ahora?' -DefaultYes))) { exit 0 }
 }
 
 # ---------------------------------------------------------------- instalar
@@ -137,6 +272,7 @@ if ($Gpu -eq 'yes') { Get-Verified 'compose.gpu.yaml' $ComposeGpuSha256; $compos
 @"
 # Generado por el instalador de Atlas-AttackLab. Para cambiarlo, vuelve a ejecutar el instalador.
 ATTACKLAB_VERSION=$Version
+ATTACKLAB_IMAGE=$Image
 ATTACKLAB_PORT=$Port
 ATTACKLAB_THREADS=$Threads
 OLLAMA_URL=http://ollama:11434
@@ -149,13 +285,13 @@ Say 'Descargando las imágenes (la primera vez tarda unos minutos)...'
 $pull = Invoke-Docker compose pull --quiet
 if ($pull.Code -ne 0) {
   if ($pull.Out -match 'denied|unauthorized|authentication') {
-    Die 'El registro de imágenes pide iniciar sesión (versión privada de pruebas).' 'Ejecuta: docker login ghcr.io  (usuario de GitHub y un token con permiso read:packages) y vuelve a lanzar el instalador.' 36
+    Die 'El registro de imágenes pide iniciar sesión.' 'Vuelve a ejecutar el instalador sin -Yes: te guiará para iniciar sesión con tu usuario de GitHub y un token.' 36
   }
   Die 'No se han podido descargar las imágenes.' 'Comprueba la conexión. Si usas un proxy, configúralo en Docker Desktop.' 32
 }
 
 if (Get-Command cosign -ErrorAction SilentlyContinue) {
-  & cosign verify "ghcr.io/kinomakino/atlas-attacklab:$Version" `
+  & cosign verify "${Image}:$Version" `
     --certificate-identity-regexp '^https://github.com/kinomakino/Atlas-AttackLab/' `
     --certificate-oidc-issuer https://token.actions.githubusercontent.com *> $null
   if ($LASTEXITCODE -ne 0) { Die 'La firma de la imagen no es válida.' 'No se arranca nada. Avísanos: puede ser una imagen manipulada.' 33 }
@@ -213,4 +349,5 @@ if (($userPath -split ';') -notcontains $bin) {
 
 Say "`nListo. Abre http://127.0.0.1:$Port"
 Say 'La primera vez, la web te ofrecerá descargar el modelo (unos 2 GB).'
-if (-not $NoOpen -and [Environment]::UserInteractive) { Start-Process "http://127.0.0.1:$Port" }
+Say "Para jugar: $BaseUrl/guia.html"
+if ([Environment]::UserInteractive) { Open-Url "http://127.0.0.1:$Port" }
