@@ -28,7 +28,7 @@ $ComposeSha256 = '__COMPOSE_SHA256__'
 $ComposeGpuSha256 = '__COMPOSE_GPU_SHA256__'
 
 $MinMemGiB = 4; $WarnMemGiB = 6
-$MinDiskGiB = $(if ($env:ATTACKLAB_MIN_DISK_GIB) { [int]$env:ATTACKLAB_MIN_DISK_GIB } else { 6 })   # variable solo para las pruebas
+$MinDiskGiB = $(if ($env:ATTACKLAB_MIN_DISK_GIB) { [int]$env:ATTACKLAB_MIN_DISK_GIB } else { 12 })   # lab ≈ 8 GB medido en CI + capas comprimidas al descargar; variable solo para las pruebas
 $PortFirst = 8080; $PortLast = 8099
 $Docker = $(if ($env:ATTACKLAB_DOCKER) { $env:ATTACKLAB_DOCKER } else { 'docker' })              # las pruebas inyectan uno simulado
 $DockerHelp = 'https://docs.docker.com/desktop/setup/install/windows-install/'
@@ -283,7 +283,7 @@ else { Ok "Núcleos para Docker: $NCpu -> $Threads hilos para el modelo" }
 
 $drive = (Split-Path -Qualifier $env:LOCALAPPDATA).TrimEnd(':')
 $DiskGiB = [int][math]::Floor((Get-PSDrive $drive).Free / 1GB)
-if ($DiskGiB -lt $MinDiskGiB) { Die "Solo hay $DiskGiB GiB libres y hacen falta $MinDiskGiB." 'Libera espacio y vuelve a intentarlo.' 21 }
+if ($DiskGiB -lt $MinDiskGiB) { Die "Solo hay $DiskGiB GiB libres y hacen falta $MinDiskGiB." 'El lab ocupa unos 8 GB (Ollama 5,6 GB, modelo 2 GB) y la descarga necesita espacio temporal. Libera espacio y vuelve a intentarlo.' 21 }
 Ok "Disco libre: $DiskGiB GiB"
 
 # ---------------------------------------------------------------- aceleración
@@ -382,16 +382,29 @@ if (Get-Command cosign -ErrorAction SilentlyContinue) {
   Ok 'Firma de la imagen verificada'
 } else { Say '  (Instala cosign si quieres que el instalador verifique la firma de las imágenes.)' }
 
-if ((Invoke-Docker compose up -d --remove-orphans).Code -ne 0) { Die 'No se ha podido arrancar el lab.' "Ejecuta 'atlas-lab logs' para ver qué ha pasado." 34 }
+# Con la salida de Docker a la vista: si pregunta algo, el alumno lo ve y contesta. Si el lab
+# no arranca, el instalador enseña él mismo el estado y los registros.
+function Invoke-DockerLive { param([Parameter(ValueFromRemainingArguments)]$a)
+  $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  try { & $script:Docker @a | Out-Host; return $LASTEXITCODE } finally { $ErrorActionPreference = $prev }   # a pantalla; solo se devuelve el código
+}
+function Show-Diag {
+  Write-Host "`nEstado del lab:" -ForegroundColor White; Invoke-DockerLive compose ps -a | Out-Null
+  Write-Host "`nÚltimos registros:" -ForegroundColor White; Invoke-DockerLive compose logs --tail 40 | Out-Null
+}
+Say 'Arrancando el lab (lo que hace Docker sale aquí abajo)...'
+if ((Invoke-DockerLive compose up -d --remove-orphans) -ne 0) {
+  Show-Diag; Die 'No se ha podido arrancar el lab.' 'Arriba tienes el estado y los registros de Docker: si no ves la causa, mándanoslos.' 34
+}
 
-Write-Host -NoNewline 'Arrancando'
+Write-Host -NoNewline 'Esperando a que el lab responda'
 $up = $false
-for ($i = 0; $i -lt 60 -and -not $up; $i++) {
+for ($i = 0; $i -lt 90 -and -not $up; $i++) {
   try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 "http://127.0.0.1:$Port/api/health" | Out-Null; $up = $true }
   catch { Write-Host -NoNewline '.'; Start-Sleep 2 }
 }
 Write-Host ''
-if (-not $up) { Die 'El lab no ha respondido a tiempo.' "Ejecuta 'atlas-lab logs' para ver qué ha pasado." 35 }
+if (-not $up) { Show-Diag; Die 'El lab no ha respondido en 3 minutos.' 'Arriba tienes el estado y los registros de Docker: si no ves la causa, mándanoslos.' 35 }
 Ok 'Lab en marcha'
 
 # ---------------------------------------------------------------- comando atlas-lab

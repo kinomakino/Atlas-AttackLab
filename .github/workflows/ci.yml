@@ -89,6 +89,14 @@ jobs:
           done
           curl -fsS http://127.0.0.1:8080/api/status | grep -q '"ready":true'
 
+      - name: Espacio en disco que ocupa el lab (base del mínimo del instalador)
+        run: |
+          docker system df -v
+          docker images --format '{{.Repository}}:{{.Tag}} {{.Size}}' | grep -E 'ollama|atlas-attacklab'
+          for v in $(docker volume ls -q --filter label=com.docker.compose.project=atlas-lab); do
+            echo "volumen $v: $(sudo du -sh "$(docker volume inspect -f '{{.Mountpoint}}' "$v")" | cut -f1)"
+          done
+
       - name: Un turno contra el reto
         run: |
           r=$(curl -fsS -X POST http://127.0.0.1:8080/api/retos/aml-t0051-secreto-asistente/attempt \

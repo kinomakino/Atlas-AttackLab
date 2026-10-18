@@ -22,7 +22,7 @@ COMPOSE_GPU_SHA256="04c2e33d734d876505fce966f974b763108754a07421e7fabf150b1b7bdd
 
 MIN_MEM_GIB=4
 WARN_MEM_GIB=6
-MIN_DISK_GIB="${ATTACKLAB_MIN_DISK_GIB:-6}"     # variable solo para las pruebas
+MIN_DISK_GIB="${ATTACKLAB_MIN_DISK_GIB:-12}"    # lab ≈ 8 GB medido en CI + capas comprimidas al descargar; variable solo para las pruebas
 PORT_FIRST=8080
 PORT_LAST=8099
 
@@ -275,7 +275,7 @@ fi
 
 DISK_DIR="$INSTALL_DIR"; [ -d "$DISK_DIR" ] || DISK_DIR="$HOME"
 DISK_GIB=$(( $(df -Pk "$DISK_DIR" | awk 'NR==2 {print $4}') / 1048576 ))
-[ "$DISK_GIB" -ge "$MIN_DISK_GIB" ] || die "Solo hay ${DISK_GIB} GiB libres y hacen falta ${MIN_DISK_GIB}." "Libera espacio y vuelve a intentarlo." 21
+[ "$DISK_GIB" -ge "$MIN_DISK_GIB" ] || die "Solo hay ${DISK_GIB} GiB libres y hacen falta ${MIN_DISK_GIB}." "El lab ocupa unos 8 GB (Ollama 5,6 GB, modelo 2 GB) y la descarga necesita espacio temporal. Libera espacio y vuelve a intentarlo." 21
 ok "Disco libre: ${DISK_GIB} GiB"
 
 # ---------------------------------------------------------------- aceleración
@@ -395,16 +395,24 @@ else
   say "  (Instala cosign si quieres que el instalador verifique la firma de las imágenes.)"
 fi
 
-"$DOCKER" compose up -d --remove-orphans >/dev/null || die "No se ha podido arrancar el lab." "Ejecuta 'atlas-lab logs' para ver qué ha pasado." 34
+# Con la salida de Docker a la vista: si pregunta algo, el alumno lo ve y contesta. Si el lab
+# no arranca, el instalador enseña él mismo el estado y los registros.
+show_diag() {
+  say ""; say "${B}Estado del lab:${N}"; "$DOCKER" compose ps -a 2>&1 || true
+  say ""; say "${B}Últimos registros:${N}"; "$DOCKER" compose logs --tail 40 2>&1 || true
+}
+say "Arrancando el lab (lo que hace Docker sale aquí abajo)…"
+"$DOCKER" compose up -d --remove-orphans \
+  || { show_diag; die "No se ha podido arrancar el lab." "Arriba tienes el estado y los registros de Docker: si no ves la causa, mándanoslos." 34; }
 
-printf 'Arrancando'
-for _ in $(seq 1 60); do
+printf 'Esperando a que el lab responda'
+for _ in $(seq 1 90); do
   curl -fsS -m 2 "http://127.0.0.1:$PORT/api/health" >/dev/null 2>&1 && break
   printf '.'; sleep 2
 done
 echo
 curl -fsS -m 2 "http://127.0.0.1:$PORT/api/health" >/dev/null 2>&1 \
-  || die "El lab no ha respondido a tiempo." "Ejecuta 'atlas-lab logs' para ver qué ha pasado." 35
+  || { show_diag; die "El lab no ha respondido en 3 minutos." "Arriba tienes el estado y los registros de Docker: si no ves la causa, mándanoslos." 35; }
 ok "Lab en marcha"
 
 # ---------------------------------------------------------------- comando atlas-lab

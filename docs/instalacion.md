@@ -44,7 +44,7 @@ En macOS y Windows, Docker corre en una máquina virtual con su propio límite d
 | 4–6 GiB | Avisa: funcionará justo, mejor cerrar otras apps |
 | Núcleos | Hilos de inferencia = 2/3 de los núcleos de Docker (mínimo 1). Con todos, la inferencia se hunde |
 | 1–2 núcleos | Avisa: las respuestas tardarán bastante |
-| Disco libre < 6 GiB | Se para (imágenes + modelo ≈ 4 GiB) |
+| Disco libre < 12 GiB | Se para. El lab ocupa unos 8 GB (medido: Ollama 5,6 GB, modelo llama3.2:3b 2 GB, lab 0,3 GB) y al descargar hacen falta unos 3,6 GB más para las capas comprimidas |
 | Arquitectura | Imágenes multiplataforma: Docker elige amd64 o arm64 solo |
 
 ### Aceleración
