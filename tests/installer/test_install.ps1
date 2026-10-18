@@ -22,13 +22,14 @@ if ($a -eq 'info') {
   if ($env:FAKE_INFO_ERR_ONCE -and -not (Test-Path $once)) { New-Item $once | Out-Null; [Console]::Error.WriteLine($env:FAKE_INFO_ERR_ONCE); exit 1 }
   exit 0
 }
+# Los errores que el instalador lee van por la salida normal: un .ps1 no pasa [Console]::Error por 2>&1 (docker.exe sí).
 if ($a -like 'manifest inspect*') {
-  if ($env:FAKE_PRIVATE -and -not (Test-Path (Join-Path $env:FAKE_STATE 'login'))) { [Console]::Error.WriteLine('unauthorized: authentication required'); exit 1 }
+  if ($env:FAKE_PRIVATE -and -not (Test-Path (Join-Path $env:FAKE_STATE 'login'))) { 'unauthorized: authentication required'; exit 1 }
   exit 0
 }
 if ($a -like 'login *') {
   if ((@($input) -join '').Trim() -eq $env:FAKE_TOKEN) { New-Item (Join-Path $env:FAKE_STATE 'login') | Out-Null; 'Login Succeeded'; exit 0 }
-  [Console]::Error.WriteLine('Error response from daemon: unauthorized'); exit 1
+  'Error response from daemon: unauthorized'; exit 1
 }
 if ($a -eq 'compose version') { exit $(if ($env:FAKE_COMPOSE_RC) { [int]$env:FAKE_COMPOSE_RC } else { 0 }) }
 exit 0
