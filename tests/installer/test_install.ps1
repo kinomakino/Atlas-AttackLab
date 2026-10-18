@@ -12,7 +12,9 @@ $pass = 0; $fail = 0
 $a = $args -join ' '
 if ($a -like 'info --format*Runtimes*') { if ($env:FAKE_RUNTIMES) { $env:FAKE_RUNTIMES } else { '{"runc":{}}' }; exit 0 }
 if ($a -like 'info --format*') {
-  "{0} {1} {2} {3}" -f $(if ($env:FAKE_OSTYPE) { $env:FAKE_OSTYPE } else { 'linux' }), $(if ($env:FAKE_NCPU) { $env:FAKE_NCPU } else { 8 }), $(if ($env:FAKE_MEM) { $env:FAKE_MEM } else { 8589934592 }), 'x86_64'
+  # Tras reiniciar WSL (wsl --shutdown simulado), Docker tiene la memoria de FAKE_MEM_AFTER_WSL.
+  $mem = $(if ($env:FAKE_MEM_AFTER_WSL -and (Test-Path (Join-Path $env:FAKE_STATE 'wsl'))) { $env:FAKE_MEM_AFTER_WSL } elseif ($env:FAKE_MEM) { $env:FAKE_MEM } else { 8589934592 })
+  "{0} {1} {2} {3}" -f $(if ($env:FAKE_OSTYPE) { $env:FAKE_OSTYPE } else { 'linux' }), $(if ($env:FAKE_NCPU) { $env:FAKE_NCPU } else { 8 }), $mem, 'x86_64'
   exit 0
 }
 if ($a -eq 'info') {
@@ -34,10 +36,16 @@ if ($a -like 'login *') {
 if ($a -eq 'compose version') { exit $(if ($env:FAKE_COMPOSE_RC) { [int]$env:FAKE_COMPOSE_RC } else { 0 }) }
 exit 0
 '@ | Set-Content -Encoding UTF8 $fake
+$fakeWsl = Join-Path $work 'wsl.ps1'
+"if (`$args -contains '--shutdown') { New-Item (Join-Path `$env:FAKE_STATE 'wsl') | Out-Null }" | Set-Content -Encoding UTF8 $fakeWsl
 
 # Run: sin preguntas (-Yes -Check). RunI: como si hubiera terminal, con lo que teclea el alumno en $typed.
 function Run($name, [int]$wantCode, $wantText, [hashtable]$vars = @{}, [string[]]$extra = @(), $typed = $null) {
   $saved = @{}
+  # Nada de esto toca el equipo: .wslconfig, wsl y los ajustes de Docker son de mentira.
+  foreach ($d in @{ ATTACKLAB_WAIT_SECS = 1; ATTACKLAB_WSL = $fakeWsl; ATTACKLAB_WSLCONFIG = (Join-Path $work 'no-wslconfig'); ATTACKLAB_DOCKER_SETTINGS = (Join-Path $work 'no-settings.json') }.GetEnumerator()) {
+    if (-not $vars.ContainsKey($d.Key)) { $vars[$d.Key] = $d.Value }
+  }
   if (-not $vars.ContainsKey('ATTACKLAB_DOCKER_APP')) { $vars['ATTACKLAB_DOCKER_APP'] = 'C:\no\existe\Docker Desktop.exe' }
   $vars['FAKE_STATE'] = Join-Path $work ('state-' + [guid]::NewGuid())
   New-Item -ItemType Directory $vars['FAKE_STATE'] | Out-Null
@@ -91,7 +99,24 @@ RunI 'menu: desinstalar sin nada instalado' 0 'instalado en este equipo' @('3')
 RunI 'Docker no instalado: enlace de descarga directa' 11 'desktop.docker.com/win/main/' @('n', 'q') @{ ATTACKLAB_DOCKER = 'C:\no\existe\docker.exe' } @('-Check')
 RunI 'Docker parado: lo arranca y vuelve a comprobar' 0 'threads=5' @('') @{ FAKE_INFO_ERR_ONCE = 'error during connect' } @('-Check')
 RunI 'Docker parado y el alumno sale' 13 'no responde' @('q') @{ FAKE_INFO_ERR = 'error during connect' } @('-Check')
-RunI 'poca memoria: explica donde subirla' 20 'wslconfig' @('q') @{ FAKE_MEM = 3 * $GiB } @('-Check')
+RunI 'poca memoria: explica donde subirla' 20 'wslconfig' @('n', 'q') @{ FAKE_MEM = 3 * $GiB; ATTACKLAB_HOST_RAM_GIB = 16 } @('-Check')
+RunI 'equipo con poca RAM: dice que no llega' 20 'no llega para el lab' @('q') @{ FAKE_MEM = 3 * $GiB; ATTACKLAB_HOST_RAM_GIB = 4 } @('-Check')
+$hv = Join-Path $work 'settings-hyperv.json'; '{"WslEngineEnabled": false}' | Set-Content $hv
+RunI 'poca memoria con Hyper-V: explica el ajuste' 20 'Advanced > Memory' @('q') @{ FAKE_MEM = 3 * $GiB; ATTACKLAB_HOST_RAM_GIB = 16; ATTACKLAB_DOCKER_SETTINGS = $hv } @('-Check')
+RunI 'logotipo al arrancar con terminal' 0 'c i b e r s e g u r i d a d' @('4')
+
+# Poca memoria con WSL 2: ajusta .wslconfig (conservando lo demás), reinicia WSL y Docker, y sigue.
+$wc = Join-Path $work 'wslconfig'
+@('[wsl2]', 'memory=1GB', 'processors=2', '[experimental]', 'autoMemoryReclaim=gradual') | Set-Content $wc
+RunI 'poca memoria con WSL 2: lo arregla y sigue' 0 'threads=5' @('', 'n') @{ FAKE_MEM = 1 * $GiB; FAKE_MEM_AFTER_WSL = 8 * $GiB; ATTACKLAB_HOST_RAM_GIB = 16; ATTACKLAB_WSLCONFIG = $wc } @('-Check')
+$got = (Get-Content $wc) -join '|'
+$want = '[wsl2]|memory=8GB|processors=2|[experimental]|autoMemoryReclaim=gradual'
+if ($got -eq $want -and (Test-Path "$wc.atlas-lab.bak")) { $pass++; 'ok    .wslconfig: memory=8GB, resto intacto y copia guardada' }
+else { $fail++; "FALLA .wslconfig`n  tiene: $got`n  quería: $want" }
+$wc2 = Join-Path $work 'wslconfig-nuevo'
+RunI 'sin .wslconfig: lo crea' 0 'threads=5' @('', 'n') @{ FAKE_MEM = 1 * $GiB; FAKE_MEM_AFTER_WSL = 8 * $GiB; ATTACKLAB_HOST_RAM_GIB = 6; ATTACKLAB_WSLCONFIG = $wc2 } @('-Check')
+if (((Get-Content $wc2) -join '|') -eq '[wsl2]|memory=4GB') { $pass++; 'ok    .wslconfig nuevo con memory=4GB (equipo de 6 GiB)' }
+else { $fail++; "FALLA .wslconfig nuevo: $((Get-Content $wc2) -join '|')" }
 RunI 'sin acceso: inicia sesion con el token' 0 'ghcr.io como alumno' @('n', 'alumno', 'ghp_bueno') @{ FAKE_PRIVATE = 1; FAKE_TOKEN = 'ghp_bueno' } @('-Check')
 RunI 'token rechazado y el alumno sale' 36 'no ha aceptado' @('n', 'alumno', 'malo', 'q') @{ FAKE_PRIVATE = 1; FAKE_TOKEN = 'ghp_bueno' } @('-Check')
 

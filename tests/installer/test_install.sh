@@ -44,7 +44,7 @@ run() {
     envs+=("$1"); shift
   done
   local out rc
-  out="$(env HOME="$WORK/home" ATTACKLAB_DOCKER="$FAKE" ATTACKLAB_NATIVE_OLLAMA_URL="http://127.0.0.1:1" \
+  out="$(env HOME="$WORK/home" ATTACKLAB_DOCKER="$FAKE" ATTACKLAB_NATIVE_OLLAMA_URL="http://127.0.0.1:1" ATTACKLAB_WAIT_SECS=1 \
          FAKE_STATE="$(mktemp -d "$WORK/state.XXXX")" ${envs[@]+"${envs[@]}"} bash "$INSTALLER" --check --yes ${args[@]+"${args[@]}"} 2>&1)"
   rc=$?
   if [ "$rc" = "$want_rc" ] && grep -qF -- "$want_text" <<<"$out"; then
@@ -66,7 +66,7 @@ run_i() {
   done
   local out rc state
   state="$(mktemp -d "$WORK/state.XXXX")"
-  out="$(printf '%b' "$input" | env HOME="$WORK/home" ATTACKLAB_DOCKER="$FAKE" ATTACKLAB_NATIVE_OLLAMA_URL="http://127.0.0.1:1" \
+  out="$(printf '%b' "$input" | env HOME="$WORK/home" ATTACKLAB_DOCKER="$FAKE" ATTACKLAB_NATIVE_OLLAMA_URL="http://127.0.0.1:1" ATTACKLAB_WAIT_SECS=1 \
          ATTACKLAB_FORCE_INTERACTIVE=1 ATTACKLAB_UNAME=Linux ATTACKLAB_DOCKER_APP=/no/existe FAKE_STATE="$state" \
          ${envs[@]+"${envs[@]}"} bash "$INSTALLER" --no-open ${args[@]+"${args[@]}"} 2>&1)"
   rc=$?
@@ -117,7 +117,9 @@ run_i "Docker no instalado en Linux: da la guía" 11 "docs.docker.com/engine/ins
 run_i "Docker no instalado en Mac: enlace de descarga directa" 11 "desktop.docker.com/mac/main/" "n\nq\n" ATTACKLAB_DOCKER=/no/existe ATTACKLAB_UNAME=Darwin -- --check
 run_i "Docker parado: lo arranca y vuelve a comprobar" 0 "threads=5" "\n" FAKE_INFO_ERR_ONCE="Cannot connect to the Docker daemon" -- --check
 run_i "Docker parado y el alumno sale" 13 "no responde" "q\n" FAKE_INFO_ERR="Cannot connect to the Docker daemon" -- --check
-run_i "poca memoria: explica dónde subirla" 20 "Resources > Memory" "q\n" FAKE_MEM=$((3 * GIB)) -- --check
+run_i "poca memoria: explica dónde subirla" 20 "Resources > Memory" "q\n" FAKE_MEM=$((3 * GIB)) ATTACKLAB_HOST_RAM_GIB=16 -- --check
+run_i "equipo con poca RAM: dice que no llega" 20 "no llega para el lab" "q\n" FAKE_MEM=$((3 * GIB)) ATTACKLAB_HOST_RAM_GIB=4 -- --check
+run_i "logotipo al arrancar con terminal" 0 "c i b e r s e g u r i d a d" "4\n"
 run_i "sin acceso: inicia sesión con el token" 0 "Sesión iniciada en ghcr.io como alumno" "n\nalumno\nghp_bueno\n" FAKE_PRIVATE=1 FAKE_TOKEN=ghp_bueno -- --check
 run_i "token rechazado y el alumno sale" 36 "no ha aceptado" "n\nalumno\nmalo\nq\n" FAKE_PRIVATE=1 FAKE_TOKEN=ghp_bueno -- --check
 run_i "sin acceso y no quiere iniciar sesión ahora" 36 "read:packages" "n\n\nq\n" FAKE_PRIVATE=1 -- --check

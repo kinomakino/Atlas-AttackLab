@@ -33,7 +33,14 @@ $PortFirst = 8080; $PortLast = 8099
 $Docker = $(if ($env:ATTACKLAB_DOCKER) { $env:ATTACKLAB_DOCKER } else { 'docker' })              # las pruebas inyectan uno simulado
 $DockerHelp = 'https://docs.docker.com/desktop/setup/install/windows-install/'
 $DockerDownload = $(if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'https://desktop.docker.com/win/main/arm64/Docker%20Desktop%20Installer.exe' } else { 'https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe' })
-$DockerDesktopExe = $(if ($env:ATTACKLAB_DOCKER_APP) { $env:ATTACKLAB_DOCKER_APP } else { Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe' })
+$DockerDesktopExe = $(if ($env:ATTACKLAB_DOCKER_APP) { $env:ATTACKLAB_DOCKER_APP } else {
+  $cands = @((Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'), (Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\Docker Desktop.exe'), (Join-Path $env:LOCALAPPDATA 'Programs\Docker\Docker\Docker Desktop.exe'))
+  $found = @($cands | Where-Object { Test-Path $_ })
+  if ($found.Count) { $found[0] } else { $cands[0] }
+})
+$WaitSecs = $(if ($env:ATTACKLAB_WAIT_SECS) { [int]$env:ATTACKLAB_WAIT_SECS } else { 180 })                   # las pruebas lo acortan
+$WslConfig = $(if ($env:ATTACKLAB_WSLCONFIG) { $env:ATTACKLAB_WSLCONFIG } else { Join-Path $env:USERPROFILE '.wslconfig' })
+$Wsl = $(if ($env:ATTACKLAB_WSL) { $env:ATTACKLAB_WSL } else { 'wsl' })
 $Image = $(if ($env:ATTACKLAB_IMAGE) { $env:ATTACKLAB_IMAGE } else { 'ghcr.io/kinomakino/atlas-attacklab' })
 $TokenUrl = 'https://github.com/settings/tokens/new?scopes=read:packages&description=atlas-attacklab'
 # Con terminal se pregunta y se ayuda; las pruebas lo fuerzan con ATTACKLAB_FORCE_INTERACTIVE.
@@ -103,24 +110,67 @@ function Find-Docker {
   # Recién instalado, el comando aún no está en el PATH de esta ventana.
   if (Get-Command $script:Docker -ErrorAction SilentlyContinue) { return }
   if ($script:Docker -ne 'docker') { return }
-  $c = Join-Path $env:ProgramFiles 'Docker\Docker\resources\bin\docker.exe'
+  $c = Join-Path (Split-Path $DockerDesktopExe) 'resources\bin\docker.exe'
   if (Test-Path $c) { $script:Docker = $c; $env:Path = (Split-Path $c) + ';' + $env:Path }
 }
 function Wait-Docker {
   Write-Host -NoNewline '   Esperando a Docker'
-  for ($i = 0; $i -lt 60; $i++) {
+  for ($i = 0; $i -lt [math]::Ceiling($WaitSecs / 3); $i++) {
     if ((Invoke-Docker info).Code -eq 0) { Write-Host ''; Ok 'Docker ya responde'; return $true }
     Write-Host -NoNewline '.'; Start-Sleep 3
   }
   Write-Host ''; Warn 'Docker todavía no responde.'; return $false
 }
 function Start-DockerDesktop {
-  if (-not (Test-Path $DockerDesktopExe)) { return $false }
-  if (-not (Ask-Yes '   ¿Arranco Docker Desktop?' -DefaultYes)) { return $false }
-  try { Start-Process $DockerDesktopExe } catch { Warn 'No he podido abrirlo. Ábrelo tú desde el menú Inicio.'; return $false }
+  # Lo intenta arrancar solo; si no puede, se lo pide al alumno.
+  Say '   Intento arrancar Docker Desktop...'
+  $started = $false
+  if (Test-Path $DockerDesktopExe) { try { Start-Process $DockerDesktopExe; $started = $true } catch { } }
+  if (-not $started -and (Get-Command $script:Docker -ErrorAction SilentlyContinue)) { $started = ((Invoke-Docker desktop start).Code -eq 0) }
+  if (-not $started) { Warn 'No he podido arrancarlo yo. Ábrelo tú desde el menú Inicio (Docker Desktop) y espera a que ponga «Engine running».'; return $false }
   Say '   La primera vez, Docker Desktop pide aceptar sus condiciones: hazlo en su ventana.'
   Find-Docker
-  return (Wait-Docker)
+  if (Wait-Docker) { return $true }
+  Warn "Docker no ha respondido en $WaitSecs segundos. Míralo tú: puede que su ventana esté pidiendo algo."
+  return $false
+}
+function Get-HostRamGiB {
+  # RAM total del equipo (no la de Docker); 0 si no se sabe.
+  if ($env:ATTACKLAB_HOST_RAM_GIB) { return [int]$env:ATTACKLAB_HOST_RAM_GIB }
+  try { return [int][math]::Floor((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB) } catch { return 0 }
+}
+function Test-WslBackend {
+  # Docker Desktop usa WSL 2 salvo que en sus ajustes se haya elegido Hyper-V.
+  $files = $(if ($env:ATTACKLAB_DOCKER_SETTINGS) { @($env:ATTACKLAB_DOCKER_SETTINGS) } else { @((Join-Path $env:APPDATA 'Docker\settings-store.json'), (Join-Path $env:APPDATA 'Docker\settings.json')) })
+  foreach ($f in $files) { if ((Test-Path $f) -and ((Get-Content -Raw $f) -match '"[Ww]slEngineEnabled"\s*:\s*false')) { return $false } }
+  return $true
+}
+function Set-WslMemory {
+  # Con WSL 2, la memoria de Docker la fija %USERPROFILE%\.wslconfig. Se ajusta, se reinicia WSL y Docker Desktop.
+  $hostGiB = Get-HostRamGiB
+  $target = $(if ($hostGiB -gt 0) { [math]::Max($MinMemGiB, [math]::Min(8, $hostGiB - 2)) } else { 8 })
+  if (-not (Ask-Yes "   ¿Lo arreglo yo? Pondré memory=${target}GB en $WslConfig (guardo una copia del que tengas) y reiniciaré WSL y Docker Desktop; se cerrarán las ventanas de WSL abiertas." -DefaultYes)) { return $false }
+  $lines = @()
+  if (Test-Path $WslConfig) { $lines = @(Get-Content $WslConfig); Copy-Item -Force $WslConfig "$WslConfig.atlas-lab.bak" }
+  $out = New-Object System.Collections.Generic.List[string]
+  $inWsl2 = $false; $seen = $false; $done = $false
+  foreach ($l in $lines) {
+    if ($l -match '^\s*\[(.+)\]\s*$') {
+      if ($inWsl2 -and -not $done) { $out.Add("memory=${target}GB"); $done = $true }
+      $inWsl2 = ($Matches[1].Trim() -eq 'wsl2'); if ($inWsl2) { $seen = $true }
+      $out.Add($l); continue
+    }
+    if ($inWsl2 -and $l -match '^\s*memory\s*=') { if (-not $done) { $out.Add("memory=${target}GB"); $done = $true }; continue }
+    $out.Add($l)
+  }
+  if (-not $done) { if (-not $seen) { $out.Add('[wsl2]') }; $out.Add("memory=${target}GB") }
+  [IO.File]::WriteAllLines($WslConfig, [string[]]$out)   # UTF-8 sin BOM
+  Ok "Guardado memory=${target}GB en $WslConfig"
+  Say '   Reiniciando WSL y Docker Desktop...'
+  Get-Process 'Docker Desktop' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+  $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  try { & $Wsl --shutdown 2>&1 | Out-Null } catch { } finally { $ErrorActionPreference = $prev }
+  return (Start-DockerDesktop)
 }
 function Connect-Registry {
   $hostName = ($Image -split '/')[0]
@@ -142,6 +192,27 @@ function Test-PortInUse([int]$p) {
   try { $c.Connect('127.0.0.1', $p); return $true } catch { return $false } finally { $c.Close() }
 }
 
+function Show-Logo {  # el logotipo de seguridad/si: corchetes en blanco, la figura en gris
+  Write-Host ' __                     __' -ForegroundColor White
+  foreach ($l in @(
+  '          _____          ',
+  '        _|     |_        ',
+  '       |_________|       ',
+  '         / ___ \         ',
+  '        | (   ) |        ',
+  '         \ | | /         ',
+  '          \|_|/          ',
+  '           \_/           '
+  )) {
+    Write-Host -NoNewline '|' -ForegroundColor White
+    Write-Host -NoNewline $l -ForegroundColor DarkGray
+    Write-Host '|' -ForegroundColor White
+  }
+  Write-Host '|__                     __|' -ForegroundColor White
+  Write-Host '  s e g u r i d a d / s i' -ForegroundColor White
+  Write-Host "c i b e r s e g u r i d a d`n" -ForegroundColor DarkGray
+}
+if ($Interactive) { Show-Logo }
 Say "Atlas-AttackLab $Version · instalador`n"
 
 $FromMenu = $false
@@ -188,7 +259,15 @@ function Test-Docker {
 
   $script:MemGiB = [int][math]::Floor($script:Mem / 1GB)
   if ($script:MemGiB -lt $MinMemGiB) {
-    return (Set-Problem 20 "Docker solo tiene $($script:MemGiB) GiB de memoria y el modelo necesita al menos $MinMemGiB." 'Con WSL 2, súbela en %USERPROFILE%\.wslconfig ([wsl2] memory=8GB) y reinicia Docker Desktop.')
+    $hostGiB = Get-HostRamGiB
+    if ($hostGiB -gt 0 -and $hostGiB -lt ($MinMemGiB + 2)) {
+      return (Set-Problem 20 "Docker solo tiene $($script:MemGiB) GiB de memoria y tu equipo tiene $hostGiB GiB de RAM en total: no llega para el lab." "El modelo necesita $MinMemGiB GiB para Docker y algo más para Windows: hace falta un equipo con al menos $($MinMemGiB + 2) GiB de RAM (mejor 8).")
+    }
+    $msg = "Docker solo tiene $($script:MemGiB) GiB de memoria y el modelo necesita al menos $MinMemGiB."
+    if (Test-WslBackend) {
+      return (Set-Problem 20 $msg "Docker usa WSL 2 y WSL le da poca memoria. Se arregla con [wsl2] memory=8GB en $WslConfig y reiniciando WSL y Docker Desktop." '' 'Set-WslMemory')
+    }
+    return (Set-Problem 20 $msg 'Súbela en Docker Desktop > Settings > Resources > Advanced > Memory (recomendado 8 GiB) y pulsa Apply & restart.')
   }
   return $true
 }

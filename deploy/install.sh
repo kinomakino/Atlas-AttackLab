@@ -29,6 +29,7 @@ PORT_LAST=8099
 DOCKER="${ATTACKLAB_DOCKER:-docker}"        # las pruebas inyectan un docker simulado
 DOCKER_APP="${ATTACKLAB_DOCKER_APP:-/Applications/Docker.app}"
 IMAGE="${ATTACKLAB_IMAGE:-ghcr.io/kinomakino/atlas-attacklab}"
+WAIT_SECS="${ATTACKLAB_WAIT_SECS:-180}"     # las pruebas lo acortan
 TOKEN_URL="https://github.com/settings/tokens/new?scopes=read:packages&description=atlas-attacklab"
 NATIVE_OLLAMA_URL="${ATTACKLAB_NATIVE_OLLAMA_URL:-http://127.0.0.1:11434}"
 INSTALL_DIR="${ATTACKLAB_DIR:-$HOME/.atlas-lab}"
@@ -73,19 +74,26 @@ resolve() {
 
 wait_docker() {  # espera hasta 3 minutos a que Docker responda
   printf '  Esperando a Docker'
-  for _ in $(seq 1 60); do
+  for _ in $(seq 1 $(( (WAIT_SECS + 2) / 3 ))); do
     if "$DOCKER" info >/dev/null 2>&1; then echo; ok "Docker ya responde"; return 0; fi
     printf '.'; sleep 3
   done
   echo; warn "Docker todavía no responde."; return 1
 }
 
-start_docker_desktop() {
-  [ "$OS_NAME" = macOS ] || return 1
-  ask_yes "  ¿Arranco Docker Desktop?" s || return 1
-  open -a "$DOCKER_APP" 2>/dev/null || { warn "No he podido abrirlo. Ábrelo tú desde Aplicaciones."; return 1; }
-  say "  La primera vez, Docker Desktop pide aceptar sus condiciones: hazlo en su ventana."
-  find_docker; wait_docker
+start_docker_desktop() {  # lo intenta arrancar solo; si no puede, se lo pide al alumno
+  say "  Intento arrancar Docker…"
+  if { [ "$OS_NAME" = macOS ] && [ -d "$DOCKER_APP" ] && open -a "$DOCKER_APP" 2>/dev/null; } \
+     || { command -v "$DOCKER" >/dev/null 2>&1 && "$DOCKER" desktop start >/dev/null 2>&1; } \
+     || { [ "$OS_NAME" = Linux ] && command -v systemctl >/dev/null 2>&1 && systemctl --user start docker-desktop >/dev/null 2>&1; }; then
+    say "  La primera vez, Docker Desktop pide aceptar sus condiciones: hazlo en su ventana."
+    find_docker
+    wait_docker && return 0
+    warn "Docker no ha respondido en $WAIT_SECS segundos. Míralo tú: puede que su ventana esté pidiendo algo."
+    return 1
+  fi
+  warn "No he podido arrancarlo yo. Arráncalo tú como se explica arriba."
+  return 1
 }
 
 registry_login() {
@@ -108,6 +116,14 @@ port_in_use() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null; }
 
 gib() { echo $(( $1 / 1073741824 )); }  # bytes -> GiB (redondeo hacia abajo)
 
+host_ram_gib() {  # RAM total del equipo (no la de Docker); 0 si no se sabe
+  if [ -n "${ATTACKLAB_HOST_RAM_GIB:-}" ]; then echo "$ATTACKLAB_HOST_RAM_GIB"; return; fi   # pruebas
+  case "$OS" in
+    Darwin) gib "$(sysctl -n hw.memsize 2>/dev/null || echo 0)" ;;
+    *) local k; k=$(awk '/^MemTotal:/ {print $2}' /proc/meminfo 2>/dev/null); echo $(( ${k:-0} / 1048576 )) ;;
+  esac
+}
+
 while [ $# -gt 0 ]; do
   case "$1" in
     --yes|-y) ASSUME_YES=1 ;;
@@ -126,6 +142,25 @@ done
 INTERACTIVE=0; FROM_MENU=0
 if [ "$ASSUME_YES" = 0 ] && { [ -t 0 ] || [ "${ATTACKLAB_FORCE_INTERACTIVE:-}" = 1 ]; }; then INTERACTIVE=1; fi
 
+logo() {  # el logotipo de seguridad/si: corchetes en blanco, la figura en gris
+  local w g
+  if [ -t 1 ]; then w=$'\033[1;37m'; g=$'\033[90m'; else w=; g=; fi
+  printf '%s __%s                     %s__%s\n' "$w" "$N" "$w" "$N"
+  while IFS= read -r l; do printf '%s|%s%s%s|%s\n' "$w" "$g" "$l" "$w" "$N"; done <<'LOGO'
+          _____          
+        _|     |_        
+       |_________|       
+         / ___ \         
+        | (   ) |        
+         \ | | /         
+          \|_|/          
+           \_/           
+LOGO
+  printf '%s|__                     __|%s\n' "$w" "$N"
+  printf '%s  s e g u r i d a d / s i%s\n' "$w" "$N"
+  printf '%sc i b e r s e g u r i d a d%s\n\n' "$g" "$N"
+}
+[ "$INTERACTIVE" = 1 ] && logo
 say "${B}Atlas-AttackLab ${VERSION}${N} · instalador"
 say ""
 
@@ -193,7 +228,7 @@ check_docker() {
         if [ "$OS_NAME" = macOS ]; then
           problem 13 "Docker está instalado pero no responde." "Abre Docker Desktop y espera a que esté en marcha." "" start_docker_desktop
         else
-          problem 13 "Docker está instalado pero no responde." "Arranca el servicio: sudo systemctl start docker"
+          problem 13 "Docker está instalado pero no responde." "Arranca el servicio: sudo systemctl start docker" "" start_docker_desktop
         fi ;;
     esac
     return
@@ -210,8 +245,13 @@ EOF
 
   MEM_GIB=$(gib "$D_MEM")
   if [ "$MEM_GIB" -lt "$MIN_MEM_GIB" ]; then
+    HOST_GIB=$(host_ram_gib)
+    if [ "$HOST_GIB" -gt 0 ] && [ "$HOST_GIB" -lt $((MIN_MEM_GIB + 2)) ]; then
+      problem 20 "Docker solo tiene ${MEM_GIB} GiB de memoria y tu equipo tiene ${HOST_GIB} GiB de RAM en total: no llega para el lab." \
+        "El modelo necesita ${MIN_MEM_GIB} GiB para Docker y algo más para el sistema: hace falta un equipo con al menos $((MIN_MEM_GIB + 2)) GiB de RAM (mejor 8)."; return
+    fi
     problem 20 "Docker solo tiene ${MEM_GIB} GiB de memoria y el modelo necesita al menos ${MIN_MEM_GIB}." \
-      "Súbela en Docker Desktop > Settings > Resources > Memory (recomendado 8 GiB) y pulsa Apply."; return
+      "Súbela en Docker Desktop > Settings > Resources > Memory (recomendado 8 GiB) y pulsa Apply & restart."; return
   fi
 }
 until check_docker; do resolve; done
